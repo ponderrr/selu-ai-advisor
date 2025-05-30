@@ -24,3 +24,4 @@ def read_student(student_id: int, db: Session = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
+new_secure_password
