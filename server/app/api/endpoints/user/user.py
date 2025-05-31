@@ -19,11 +19,16 @@ user_module = APIRouter()
 # create new user 
 @user_module.post('/', response_model=User)
 async def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
+    if not user.email.endswith("@selu.edu"):
+        raise HTTPException(status_code=400, detail="Only @selu.edu email addresses are allowed")
+
     db_user = user_functions.get_user_by_email(db, user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="User already exists")
+
     new_user = user_functions.create_new_user(db, user)
     return new_user
+
 
 # get all user 
 @user_module.get('/', 
