@@ -13,8 +13,7 @@ user_router.include_router(
 
 user_router.include_router(
     auth_module,
-    prefix="",
+    prefix="/auth",
     tags=["auth"],
     responses={404: {"description": "Not found"}},
 )
-

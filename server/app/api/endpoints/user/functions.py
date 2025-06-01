@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 
 # import 
 from app.models import user as UserModel
-from app.schemas.user import UserCreate, UserUpdate, Token
+from app.schemas.user import User, UserCreate, UserUpdate, Token
 from app.core.settings import SECRET_KEY, REFRESH_SECRET_KEY, ALGORITHM
 from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.dependencies import get_db, oauth2_scheme
@@ -45,7 +45,7 @@ def read_all_user(db: Session, skip: int, limit: int):
 # update user
 def update_user(db: Session, user_id: int, user: UserUpdate):
     db_user = get_user_by_id(db, user_id)
-    updated_data = user.model_dump(exclude_unset=True) # partial update
+    updated_data = user.model_dump(exclude_unset=True)
     for key, value in updated_data.items():
         setattr(db_user, key, value)
     db.add(db_user)
@@ -61,6 +61,9 @@ def delete_user(db: Session, user_id: int):
     # db.refresh(db_user)
     return {"msg": f"{db_user.email} deleted successfully"}
 
+def get_user_by_w_number(db: Session, w_number: str):
+    return db.query(User).filter(User.w_number == w_number).first()
+
 # =====================> login/logout <============================
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -74,7 +77,10 @@ def authenticate_user(db: Session, user: UserCreate):
     return member
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
+    to_encode = {
+        k: (v.value if hasattr(v, "value") else v)
+        for k, v in data.items()
+    }
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -83,8 +89,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+
 async def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
+    to_encode = {
+        k: (v.value if hasattr(v, "value") else v)
+        for k, v in data.items()
+    }
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -92,6 +102,7 @@ async def create_refresh_token(data: dict, expires_delta: timedelta | None = Non
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 async def refresh_access_token(db: Session, refresh_token: str):
     try:
@@ -131,4 +142,3 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
         return user
     except JWTError:
         raise credentials_exception
-
