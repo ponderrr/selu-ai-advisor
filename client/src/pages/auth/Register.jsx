@@ -57,6 +57,7 @@ function Register() {
     firstName: "",
     lastName: "",
     wNumber: "",
+    // Consider lazy-generating this only if needed, and ensure 7 digits.
     degreeProgram: "",
     academicYear: "",
   });
@@ -157,7 +158,11 @@ function Register() {
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
-      wNumber: formData.wNumber || `W${Date.now()}`, // Auto-generate if not provided
+      wNumber: formData.wNumber || generateRandomWNumber(), // 7-digit guaranteed helper, see below
+      degreeProgram: formData.degreeProgram,
+      academicYear: formData.academicYear,
+      degreeProgram: formData.degreeProgram,
+      academicYear: formData.academicYear,
       degreeProgram: formData.degreeProgram,
       academicYear: formData.academicYear,
     });

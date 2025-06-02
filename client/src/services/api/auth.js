@@ -52,11 +52,13 @@ export const authService = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          w_number: userData.wNumber || `W${Date.now()}`,
+          w_number: userData.wNumber || `W${Date.now().toString().slice(-7)}`, // at most 7 digits
           email: userData.email,
           password: userData.password || "temporary_password", // Backend requires this
           first_name: userData.firstName,
           last_name: userData.lastName,
+          degree_program: userData.degreeProgram,
+          academic_year: userData.academicYear,
         }),
       });
 
