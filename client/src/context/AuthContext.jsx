@@ -22,6 +22,7 @@ function authReducer(state, action) {
   switch (action.type) {
     case authActions.SET_LOADING:
       return { ...state, isLoading: action.payload };
+
     case authActions.LOGIN_SUCCESS:
       return {
         ...state,
@@ -30,6 +31,7 @@ function authReducer(state, action) {
         error: null,
         isLoading: false,
       };
+
     case authActions.LOGIN_FAILURE:
       return {
         ...state,
@@ -38,6 +40,7 @@ function authReducer(state, action) {
         error: action.payload,
         isLoading: false,
       };
+
     case authActions.LOGOUT:
       return {
         ...state,
@@ -46,8 +49,10 @@ function authReducer(state, action) {
         error: null,
         isLoading: false,
       };
+
     case authActions.CLEAR_ERROR:
       return { ...state, error: null };
+
     default:
       return state;
   }
@@ -71,19 +76,17 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // Try to verify token with backend
-      const userData = await authService.verifyToken(token);
+      // Verify token and get user data
+      const userData = await authService.getCurrentUser();
       dispatch({
         type: authActions.LOGIN_SUCCESS,
         payload: { user: userData },
       });
     } catch (error) {
-      console.log(
-        "Auth check failed (expected if backend not running):",
-        error.message
-      );
-      // Remove invalid token
+      console.log("Auth check failed:", error.message);
+      // Remove invalid tokens
       localStorage.removeItem("authToken");
+      localStorage.removeItem("refreshToken");
       dispatch({ type: authActions.SET_LOADING, payload: false });
     }
   };
@@ -94,12 +97,12 @@ export function AuthProvider({ children }) {
 
       const response = await authService.login(email, password);
 
-      // Store token
-      localStorage.setItem("authToken", response.token);
+      // Get user info after successful login
+      const userData = await authService.getCurrentUser();
 
       dispatch({
         type: authActions.LOGIN_SUCCESS,
-        payload: { user: response.user },
+        payload: { user: userData },
       });
 
       return { success: true };
@@ -118,12 +121,12 @@ export function AuthProvider({ children }) {
 
       const response = await authService.register(userData);
 
-      // Auto-login after registration
-      localStorage.setItem("authToken", response.token);
+      // Get user info after successful registration & auto-login
+      const userInfo = await authService.getCurrentUser();
 
       dispatch({
         type: authActions.LOGIN_SUCCESS,
-        payload: { user: response.user },
+        payload: { user: userInfo },
       });
 
       return { success: true };
@@ -136,8 +139,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("authToken");
+  const logout = async () => {
+    await authService.logout();
     dispatch({ type: authActions.LOGOUT });
   };
 

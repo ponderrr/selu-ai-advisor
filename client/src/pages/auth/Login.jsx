@@ -100,6 +100,7 @@ function Login() {
       const from = location.state?.from?.pathname || "/";
       navigate(from, { replace: true });
     }
+    // Error handling is done by AuthContext
   };
 
   const togglePasswordVisibility = () => {
