@@ -249,6 +249,7 @@ function MainDashboard() {
     try {
       setProgressLoading(true);
       const progress = await dashboardService.getDegreeProgress();
+      if (!isMounted) return; // Check before setting state
       setDegreeProgress(progress);
 
       const welcomeMessage = {
@@ -876,6 +877,9 @@ function MainDashboard() {
                         mr: 2,
                       }}
                     >
+                      <Typography variant="caption" sx={{ fontSize: "0.6rem" }}>
+                        {deadline.priority.toUpperCase()}
+                      </Typography>
                       <CalendarMonth
                         sx={{
                           color:

@@ -24,8 +24,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error fetching degree progress:", error);
-      throw error;
+      return handleApiError(error, "getDegreeProgress");
     }
   },
 
@@ -112,6 +111,10 @@ export const dashboardService = {
   async searchCourses(query) {
     try {
       const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/courses/search?q=${encodeURIComponent(query)}`,
         {
