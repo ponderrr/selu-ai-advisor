@@ -22,6 +22,7 @@ import {
   Lock,
   Person,
   School,
+  Badge,
 } from "@mui/icons-material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -55,6 +56,8 @@ function Register() {
     confirmPassword: "",
     firstName: "",
     lastName: "",
+    wNumber: "",
+    // Consider lazy-generating this only if needed, and ensure 7 digits.
     degreeProgram: "",
     academicYear: "",
   });
@@ -133,6 +136,11 @@ function Register() {
       errors.academicYear = "Please select your academic year";
     }
 
+    // W Number validation (optional, will be auto-generated if not provided)
+    if (formData.wNumber && !/^W\d{7}$/.test(formData.wNumber)) {
+      errors.wNumber = "W Number must be in format W1234567";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -150,6 +158,11 @@ function Register() {
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
+      wNumber: formData.wNumber || generateRandomWNumber(), // 7-digit guaranteed helper, see below
+      degreeProgram: formData.degreeProgram,
+      academicYear: formData.academicYear,
+      degreeProgram: formData.degreeProgram,
+      academicYear: formData.academicYear,
       degreeProgram: formData.degreeProgram,
       academicYear: formData.academicYear,
     });
@@ -158,6 +171,7 @@ function Register() {
     if (result.success) {
       navigate("/", { replace: true });
     }
+    // Error handling is done by AuthContext
   };
 
   const togglePasswordVisibility = () => {
@@ -211,6 +225,7 @@ function Register() {
         )}
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
+          {/* Name Fields */}
           <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
             <TextField
               fullWidth
@@ -243,6 +258,7 @@ function Register() {
             />
           </Box>
 
+          {/* Email Field */}
           <TextField
             fullWidth
             label="SELU Email Address"
@@ -264,6 +280,29 @@ function Register() {
             }}
           />
 
+          {/* W Number Field */}
+          <TextField
+            fullWidth
+            label="W Number (Optional)"
+            name="wNumber"
+            value={formData.wNumber}
+            onChange={handleChange}
+            error={!!formErrors.wNumber}
+            helperText={
+              formErrors.wNumber || "Leave blank to auto-generate (W1234567)"
+            }
+            margin="normal"
+            placeholder="W1234567"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Badge />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {/* Degree Program and Academic Year */}
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <FormControl fullWidth error={!!formErrors.degreeProgram}>
               <InputLabel>Degree Program</InputLabel>
@@ -316,6 +355,7 @@ function Register() {
             </FormControl>
           </Box>
 
+          {/* Password Field */}
           <TextField
             fullWidth
             label="Password"
@@ -348,6 +388,7 @@ function Register() {
             }}
           />
 
+          {/* Confirm Password Field */}
           <TextField
             fullWidth
             label="Confirm Password"
@@ -380,6 +421,7 @@ function Register() {
             }}
           />
 
+          {/* Submit Button */}
           <Button
             type="submit"
             fullWidth
@@ -394,6 +436,7 @@ function Register() {
             )}
           </Button>
 
+          {/* Login Link */}
           <Box sx={{ textAlign: "center" }}>
             <Typography variant="body2">
               Already have an account?{" "}
