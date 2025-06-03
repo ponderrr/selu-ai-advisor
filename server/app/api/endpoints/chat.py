@@ -95,9 +95,10 @@ async def chat_health():
         "model": "mistral" if is_healthy else None,
         "message": "AI service is ready" if is_healthy else "AI service is not available"
     }
-
 @chat_router.get("/test")
-async def test_ai_response():
+async def test_ai_response(
+    current_user: User = Depends(get_current_user)
+):
     """Test endpoint for AI functionality (remove in production)"""
     test_result = await ollama_service.chat(
         prompt="Hello, this is a test. Please respond with a brief greeting.",

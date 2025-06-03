@@ -3,13 +3,16 @@ import json
 import time
 from typing import Dict, Any
 import logging
+import httpx
 
+# Initialize logger
 logger = logging.getLogger(__name__)
 
 class OllamaService:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
         self.model = "mistral"
+        self.client = httpx.AsyncClient(timeout=60.0)
     
     async def chat(self, prompt: str, system_message: str = None) -> Dict[str, Any]:
         """
@@ -28,18 +31,18 @@ class OllamaService:
                 "prompt": full_prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.7,  # Controls creativity (0.0-1.0)
-                    "top_p": 0.9,       # Controls diversity
-                    "max_tokens": 1000   # Maximum response length
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "max_tokens": 1000
                 }
             }
             
-            response = requests.post(
+            response = await self.client.post(
                 f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=60  # 60 second timeout for AI responses
+                json=payload
             )
             
+            # rest of the method remains the same
             end_time = time.time()
             response_time = end_time - start_time
             
