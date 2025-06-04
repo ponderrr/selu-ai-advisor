@@ -11,6 +11,7 @@ import {
   InputAdornment,
   Link,
   CircularProgress,
+  Stack,
 } from "@mui/material";
 import { Email, ArrowForward, School, Lock } from "@mui/icons-material";
 import { validateEmail } from "../../services/validation/authValidation";
@@ -186,7 +187,7 @@ const SignInForm = ({
       </Box>
 
       {/* SSO Options */}
-      <Box sx={{ space: 1.5 }}>
+      <Stack spacing={1.5}>
         <Button
           fullWidth
           variant="outlined"
@@ -243,7 +244,7 @@ const SignInForm = ({
         >
           Microsoft 365
         </Button>
-      </Box>
+      </Stack>
 
       {/* Security Footer */}
       <Box

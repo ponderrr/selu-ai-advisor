@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Link,
   Paper,
+  Stack,
 } from "@mui/material";
 import { MailOutline, ArrowBack } from "@mui/icons-material";
 
@@ -202,48 +203,50 @@ const EmailVerificationForm = ({
         </Button>
 
         {/* Resend and Back Links */}
-        <Box sx={{ textAlign: "center", space: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Didn't receive it?{" "}
-            {resendCooldown > 0 ? (
-              <Box component="span" color="text.disabled">
-                Resend code ({formatCountdown(resendCooldown)})
-              </Box>
-            ) : (
-              <Link
-                component="button"
-                variant="body2"
-                onClick={onResendCode}
-                sx={{
-                  color: "primary.main",
-                  fontWeight: "medium",
-                  textDecoration: "none",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-              >
-                Resend code
-              </Link>
-            )}
-          </Typography>
+        <Box sx={{ textAlign: "center" }}>
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              Didn't receive it?{" "}
+              {resendCooldown > 0 ? (
+                <Box component="span" color="text.disabled">
+                  Resend code ({formatCountdown(resendCooldown)})
+                </Box>
+              ) : (
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={onResendCode}
+                  sx={{
+                    color: "primary.main",
+                    fontWeight: "medium",
+                    textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  Resend code
+                </Link>
+              )}
+            </Typography>
 
-          <Link
-            component="button"
-            variant="body2"
-            onClick={onBackToEmail}
-            sx={{
-              color: "primary.main",
-              fontWeight: "medium",
-              textDecoration: "none",
-              "&:hover": { textDecoration: "underline" },
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 0.5,
-            }}
-          >
-            <ArrowBack sx={{ fontSize: 16 }} />
-            Use a different email
-          </Link>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={onBackToEmail}
+              sx={{
+                color: "primary.main",
+                fontWeight: "medium",
+                textDecoration: "none",
+                "&:hover": { textDecoration: "underline" },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.5,
+              }}
+            >
+              <ArrowBack sx={{ fontSize: 16 }} />
+              Use a different email
+            </Link>
+          </Stack>
         </Box>
       </Box>
     </Box>

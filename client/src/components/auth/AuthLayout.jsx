@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Typography, Paper, useTheme, useMediaQuery } from "@mui/material";
 import {
   School,
@@ -8,10 +8,17 @@ import {
   Star,
   Person,
 } from "@mui/icons-material";
+import AiAdvisorIllustration from "../../assets/images/ai-academic-advisor.png";
 
 const AuthLayout = ({ children, showTestimonial = true }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
+
+  const [imageVisible, setImageVisible] = useState(true);
+
+  const handleImageError = () => {
+    setImageVisible(false);
+  };
 
   const features = [
     "Get instant answers about your degree requirements",
@@ -68,19 +75,22 @@ const AuthLayout = ({ children, showTestimonial = true }) => {
         </Box>
 
         {/* Hero Illustration */}
-        <Box sx={{ mb: 6, display: "flex", justifyContent: "center" }}>
-          <Box
-            component="img"
-            src="https://storage.googleapis.com/uxpilot-auth.appspot.com/063f087625-456f8eb86c4c6661a2c1.png"
-            alt="AI Academic Advisor Interface"
-            sx={{
-              width: "100%",
-              maxWidth: 400,
-              borderRadius: 2,
-              boxShadow: 3,
-            }}
-          />
-        </Box>
+        {imageVisible && (
+          <Box sx={{ mb: 6, display: "flex", justifyContent: "center" }}>
+            <Box
+              component="img"
+              src={AiAdvisorIllustration}
+              alt="AI Academic Advisor Interface"
+              sx={{
+                width: "100%",
+                maxWidth: 400,
+                borderRadius: 2,
+                boxShadow: 3,
+              }}
+              onError={handleImageError}
+            />
+          </Box>
+        )}
 
         {/* Value Proposition */}
         <Box sx={{ mb: 4 }}>
@@ -92,7 +102,7 @@ const AuthLayout = ({ children, showTestimonial = true }) => {
             Your 24/7 Academic Success Partner
           </Typography>
 
-          <Box sx={{ space: 2 }}>
+          <Box>
             {features.map((feature, index) => (
               <Box
                 key={index}

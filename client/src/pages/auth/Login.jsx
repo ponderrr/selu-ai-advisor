@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
@@ -12,6 +12,8 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+
+  const intervalIdRef = useRef(null); // Keep track of the interval ID
 
   const [currentStep, setCurrentStep] = useState("signin"); // "signin" | "verification"
   const [emailData, setEmailData] = useState({
@@ -39,17 +41,42 @@ const Login = () => {
 
   // Handle countdown timer for resend
   useEffect(() => {
-    let timer;
-    if (verificationData.resendCooldown > 0) {
-      timer = setInterval(() => {
-        setVerificationData((prev) => ({
-          ...prev,
-          resendCooldown: prev.resendCooldown - 1,
-        }));
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [verificationData.resendCooldown]);
+    // This effect runs once on mount.
+    // It sets up an interval that will call setVerificationData.
+    // setVerificationData's callback will decide if the interval should continue.
+
+    intervalIdRef.current = setInterval(() => {
+      setVerificationData((prevData) => {
+        if (prevData.resendCooldown > 0) {
+          const newCooldown = prevData.resendCooldown - 1;
+          if (newCooldown === 0) {
+            // Countdown finished. Clear the interval.
+            if (intervalIdRef.current) {
+              clearInterval(intervalIdRef.current);
+              intervalIdRef.current = null; // Mark as cleared
+            }
+          }
+          return { ...prevData, resendCooldown: newCooldown };
+        } else {
+          // Cooldown is already 0 or less.
+          // If an interval is somehow still running, clear it.
+          if (intervalIdRef.current) {
+            clearInterval(intervalIdRef.current);
+            intervalIdRef.current = null; // Mark as cleared
+          }
+          return prevData; // No change to state
+        }
+      });
+    }, 1000);
+
+    // Cleanup function for unmount
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array: runs on mount, cleans on unmount.
 
   const handleEmailSubmit = async (formData) => {
     try {
@@ -106,23 +133,30 @@ const Login = () => {
       );
 
       if (response.ok) {
-        const data = await response.json();
+        // Backend should now issue an HttpOnly, SameSite cookie upon successful OTP verification.
+        // Tokens are no longer stored in localStorage.
 
-        // Store tokens if provided
-        if (data.access_token) {
-          localStorage.setItem("authToken", data.access_token);
-          localStorage.setItem("refreshToken", data.refresh_token);
-        }
-
-        // Get user data and update auth context
-        const result = await login(emailData.email, code); // This might need to be adapted
+        // The login function from AuthContext is called to update client-side auth state.
+        // This function should now rely on the HttpOnly cookie.
+        // Review AuthContext.login to ensure its parameters (email, code) are still
+        // appropriate or if it can be simplified for a cookie-based session.
+        const result = await login(emailData.email, code);
 
         if (result.success) {
+          setVerificationData((prev) => ({ ...prev, loading: false })); // Reset loading before navigation
           const from = location.state?.from?.pathname || "/";
           navigate(from, { replace: true });
+        } else {
+          // Handle failure from AuthContext.login (e.g., if user fetch failed or login was unsuccessful)
+          setVerificationData((prev) => ({
+            ...prev,
+            loading: false,
+            error: result.error || "Login failed after OTP verification.",
+          }));
         }
       } else {
         const errorData = await response.json();
+        // This error will be caught by the catch block below, which sets loading to false.
         throw new Error(errorData.detail || "Invalid verification code");
       }
     } catch (err) {

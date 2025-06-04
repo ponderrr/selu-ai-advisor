@@ -134,12 +134,6 @@ const Register = () => {
       if (response.ok) {
         const data = await response.json();
 
-        // Store tokens if provided
-        if (data.access_token) {
-          localStorage.setItem("authToken", data.access_token);
-          localStorage.setItem("refreshToken", data.refresh_token);
-        }
-
         // Complete registration through auth context
         const result = await register(registrationData);
 

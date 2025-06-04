@@ -229,7 +229,7 @@ const SignUpForm = ({
         </Paper>
 
         {/* Account Creation Form */}
-        <Box sx={{ space: 3 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Email */}
           <TextField
             fullWidth
