@@ -106,7 +106,7 @@ function Settings() {
       />
 
       {/* Main Content */}
-      <Box sx={{ flexGrow: 1, ml: "256px", p: 3 }}>
+      <Box sx={{ flexGrow: 1, ml: { xs: 0, sm: 0, md: "256px" }, p: 3 }}>
         {/* Breadcrumb and Header */}
         <Box sx={{ mb: 3 }}>
           <Breadcrumbs

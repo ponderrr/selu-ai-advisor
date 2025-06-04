@@ -18,7 +18,12 @@ import {
 import { PhotoCamera, Save } from "@mui/icons-material";
 import { settingsService } from "../../services/api/settings";
 
-function ProfileInformation({ userProfile, onUpdate }) {
+function ProfileInformation({
+  userProfile,
+  onUpdate,
+  onSaveCompletion,
+  onProfileRefreshNeeded,
+}) {
   const [formData, setFormData] = useState({
     fullName: "",
     preferredName: "",
@@ -40,6 +45,57 @@ function ProfileInformation({ userProfile, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [majors, setMajors] = useState([]);
   const [concentrations, setConcentrations] = useState([]);
+  const [graduationOptions, setGraduationOptions] = useState([]);
+
+  // Helper function to generate current semester
+  const generateCurrentSemester = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // Month is 0-indexed
+
+    if (month >= 1 && month <= 5) {
+      // Jan - May
+      return `Spring ${year}`;
+    } else if (month >= 6 && month <= 7) {
+      // Jun - Jul
+      return `Summer ${year}`;
+    } else {
+      // Aug - Dec
+      return `Fall ${year}`;
+    }
+  };
+
+  // Helper function to generate graduation options
+  const generateGraduationOptions = () => {
+    const options = [];
+    const currentYear = new Date().getFullYear();
+    let termYear = currentYear;
+    // Determine start term based on current month to provide relevant future options
+    const currentMonth = new Date().getMonth(); // 0-Jan, 4-May, 7-Aug
+    let termCounter; // 0 for Spring, 1 for Summer, 2 for Fall
+
+    if (currentMonth <= 4) {
+      // Currently Spring or earlier
+      termCounter = 0; // Start with Spring current_year
+    } else if (currentMonth <= 7) {
+      // Currently Summer or earlier
+      termCounter = 1; // Start with Summer current_year
+    } else {
+      // Currently Fall
+      termCounter = 2; // Start with Fall current_year
+    }
+
+    const termNames = ["Spring", "Summer", "Fall"];
+
+    for (let i = 0; i < 8; i++) {
+      // Generate next 8 terms (approx 2.5-3 years)
+      const term = termNames[termCounter % 3];
+      const year = termYear + Math.floor(termCounter / 3);
+      options.push(`${term} ${year}`);
+      termCounter++;
+    }
+    return options;
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -54,7 +110,8 @@ function ProfileInformation({ userProfile, onUpdate }) {
         concentration: userProfile.academic?.concentration || "",
         expectedGraduation: userProfile.academic?.expectedGraduation || "",
         academicStanding: userProfile.academic?.standing || "Good Standing",
-        currentSemester: userProfile.academic?.currentSemester || "Fall 2024",
+        currentSemester:
+          userProfile.academic?.currentSemester || generateCurrentSemester(),
         campus: userProfile.academic?.campus || "Hammond Campus",
         phoneNumber: userProfile.contact?.phoneNumber || "",
         preferredCommunication: userProfile.contact?.preferredMethod || "Email",
@@ -70,6 +127,13 @@ function ProfileInformation({ userProfile, onUpdate }) {
 
   const loadAcademicOptions = async () => {
     try {
+      // Simulate fetching graduation terms - replace with actual API call if available
+      // const gradTermsData = await settingsService.getAvailableGraduationTerms();
+      // setGraduationOptions(gradTermsData);
+
+      // Fallback to generated options if API call fails or is not available
+      setGraduationOptions(generateGraduationOptions());
+
       const [majorsData, concentrationsData] = await Promise.all([
         settingsService.getAvailableMajors(),
         settingsService.getAvailableConcentrations(formData.major),
@@ -78,7 +142,7 @@ function ProfileInformation({ userProfile, onUpdate }) {
       setConcentrations(concentrationsData);
     } catch (error) {
       console.error("Error loading academic options:", error);
-      // Fallback data
+      // Fallback data for majors and concentrations
       setMajors(["Computer Science", "Information Technology", "Data Science"]);
       setConcentrations([
         "Software Engineering",
@@ -86,6 +150,10 @@ function ProfileInformation({ userProfile, onUpdate }) {
         "Data Science",
         "General Computer Science",
       ]);
+      // Fallback for graduation options if initial generation also had an issue (unlikely here)
+      if (graduationOptions.length === 0) {
+        setGraduationOptions(generateGraduationOptions());
+      }
     }
   };
 
@@ -114,17 +182,53 @@ function ProfileInformation({ userProfile, onUpdate }) {
 
   const handlePhotoUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      try {
-        setLoading(true);
-        await settingsService.uploadProfilePhoto(file);
-        // Trigger a refresh of user profile
-        window.location.reload(); // For now, could be improved with state update
-      } catch (error) {
-        console.error("Error uploading photo:", error);
-      } finally {
-        setLoading(false);
+
+    if (!file) {
+      return;
+    }
+
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/gif"];
+
+    if (file.size > MAX_FILE_SIZE) {
+      if (onSaveCompletion) {
+        onSaveCompletion("File is too large. Maximum size is 2MB.", false);
       }
+      return;
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      if (onSaveCompletion) {
+        onSaveCompletion(
+          "Invalid file type. Please upload a JPG, PNG, or GIF image.",
+          false
+        );
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await settingsService.uploadProfilePhoto(file);
+
+      // Trigger parent to refresh profile data
+      if (onProfileRefreshNeeded) {
+        await onProfileRefreshNeeded();
+      }
+
+      if (onSaveCompletion) {
+        onSaveCompletion(
+          "Photo uploaded successfully! Your profile has been updated.",
+          true
+        );
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      if (onSaveCompletion) {
+        onSaveCompletion("Error uploading photo. Please try again.", false);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,8 +260,14 @@ function ProfileInformation({ userProfile, onUpdate }) {
       };
 
       await onUpdate(updateData);
+      if (onSaveCompletion) {
+        onSaveCompletion("Profile updated successfully!", true);
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
+      if (onSaveCompletion) {
+        onSaveCompletion("Failed to update profile. Please try again.", false);
+      }
     } finally {
       setLoading(false);
     }
@@ -324,10 +434,17 @@ function ProfileInformation({ userProfile, onUpdate }) {
                   handleInputChange("expectedGraduation", e.target.value)
                 }
               >
-                <MenuItem value="Spring 2026">Spring 2026</MenuItem>
-                <MenuItem value="Fall 2025">Fall 2025</MenuItem>
-                <MenuItem value="Spring 2025">Spring 2025</MenuItem>
-                <MenuItem value="Fall 2024">Fall 2024</MenuItem>
+                {graduationOptions.map((term) => (
+                  <MenuItem key={term} value={term}>
+                    {term}
+                  </MenuItem>
+                ))}
+                {/* Fallback if options are empty, though unlikely with generator */}
+                {graduationOptions.length === 0 && (
+                  <MenuItem value="" disabled>
+                    Loading options...
+                  </MenuItem>
+                )}
               </Select>
             </FormControl>
           </Grid>
