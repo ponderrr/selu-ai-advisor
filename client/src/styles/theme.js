@@ -12,6 +12,18 @@ const theme = createTheme({
       light: "#ffd54f",
       dark: "#b8860b",
     },
+    grey: {
+      50: "#F5F7FA",
+      100: "#f5f5f5",
+      200: "#eeeeee",
+      300: "#e0e0e0",
+      400: "#bdbdbd",
+      500: "#9e9e9e",
+      600: "#757575",
+      700: "#616161",
+      800: "#424242",
+      900: "#212121",
+    },
     background: {
       default: "#f5f7fa",
       paper: "#ffffff",
@@ -19,6 +31,14 @@ const theme = createTheme({
     text: {
       primary: "#333333",
       secondary: "#666666",
+    },
+    info: {
+      light: "#e3f2fd",
+      main: "#2196f3",
+    },
+    success: {
+      light: "#e8f5e8",
+      main: "#4caf50",
     },
   },
   typography: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Drawer,
@@ -39,7 +39,6 @@ import {
   Send,
   ArrowForward,
   CalendarViewMonth,
-  GraduationCap,
   Search,
   Person,
 } from "@mui/icons-material";
@@ -218,6 +217,7 @@ function MainDashboard() {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMountedRef = useRef(true);
 
   // State variables
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -243,13 +243,18 @@ function MainDashboard() {
   useEffect(() => {
     loadInitialData();
     checkAiHealth();
+
+    // Added: Cleanup function to set isMountedRef to false on unmount
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const loadInitialData = async () => {
     try {
       setProgressLoading(true);
       const progress = await dashboardService.getDegreeProgress();
-      if (!isMounted) return; // Check before setting state
+      if (!isMountedRef.current) return;
       setDegreeProgress(progress);
 
       const welcomeMessage = {
@@ -954,7 +959,7 @@ function MainDashboard() {
                   action: "Plan Next Semester",
                 },
                 {
-                  icon: <GraduationCap />,
+                  icon: <School />,
                   text: "Check Graduation",
                   action: "Check Graduation",
                 },
