@@ -1,8 +1,8 @@
-"""add w_number to users
+"""add level column to courses
 
-Revision ID: 1b8320c9acfc
-Revises: f476538e5d08
-Create Date: 2025-05-31 15:13:59.064258
+Revision ID: 3049bf89206c
+Revises: 8a0a6bbae3b5
+Create Date: 2025-06-04 17:14:31.592253
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1b8320c9acfc'
-down_revision: Union[str, None] = 'f476538e5d08'
+revision: str = '3049bf89206c'
+down_revision: Union[str, None] = '8a0a6bbae3b5'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

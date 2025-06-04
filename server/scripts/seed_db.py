@@ -1,19 +1,23 @@
-from app.core.database import SessionLocal
-from app.models.course import Course
+# server/scripts/seed_db.py
+import asyncio
+from sqlalchemy.orm import Session
+from app.db.init_db import init_db # Import the init_db function
+from app.core.dependencies import get_db # To get a DB session
+import logging
 
-def seed_courses():
-    db = SessionLocal()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-    courses = [
-        Course(code="CSCI 101", title="Intro to Computer Science", credits=3, level="100"),
-        Course(code="MATH 121", title="Calculus I", credits=4, level="100"),
-        Course(code="ENGL 101", title="English Composition", credits=3, level="100"),
-    ]
-
-    db.add_all(courses)
-    db.commit()
-    db.close()
-    print("Courses seeded.")
+async def main():
+    logger.info("Starting database seeding...")
+    db: Session = next(get_db()) 
+    try:
+        await init_db(db)
+    except Exception as e:
+        logger.error(f"An error occurred during database seeding: {e}", exc_info=True)
+    finally:
+        db.close()
+    logger.info("Database seeding finished.")
 
 if __name__ == "__main__":
-    seed_courses()
+    asyncio.run(main())
