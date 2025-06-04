@@ -123,122 +123,149 @@ const getMockGraduationData = () => ({
   },
 });
 
-function GraduationChecklist({ data }) {
-  // Use provided data or fallback to mock data
-  const graduationData =
-    data && (data.institutional || data.academic)
-      ? data
-      : getMockGraduationData();
+GraduationChecklist.propTypes = {
+  data: PropTypes.shape({
+    institutional: PropTypes.arrayOf(
+      PropTypes.shape({
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string.isRequired,
+        status: PropTypes.oneOf(["completed", "in-progress", "not-started"])
+          .isRequired,
+        details: PropTypes.string,
+      })
+    ),
+    academic: PropTypes.arrayOf(
+      PropTypes.shape({
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string.isRequired,
+        status: PropTypes.oneOf(["completed", "in-progress", "not-started"])
+          .isRequired,
+        details: PropTypes.string,
+      })
+    ),
+    summary: PropTypes.shape({
+      creditsCompleted: PropTypes.number.isRequired,
+      totalCredits: PropTypes.number.isRequired,
+      overallProgress: PropTypes.number.isRequired,
+      cumulativeGPA: PropTypes.number.isRequired,
+      expectedGraduation: PropTypes.string.isRequired,
+    }),
+  }),
+};
+// Use provided data or fallback to mock data
+const graduationData =
+  data && (data.institutional || data.academic)
+    ? data
+    : getMockGraduationData();
 
-  const institutionalRequirements = graduationData.institutional || [];
-  const academicRequirements = graduationData.academic || [];
-  const summary = graduationData.summary || getMockGraduationData().summary;
+const institutionalRequirements = graduationData.institutional || [];
+const academicRequirements = graduationData.academic || [];
+const summary = graduationData.summary || getMockGraduationData().summary;
 
-  return (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Graduation Requirements Checklist
-      </Typography>
+return (
+  <Box sx={{ mb: 3 }}>
+    <Typography variant="h5" fontWeight="bold" gutterBottom>
+      Graduation Requirements Checklist
+    </Typography>
 
-      <Paper sx={{ p: 3 }}>
-        <Grid container spacing={4}>
-          {/* Institutional Requirements */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Institutional Requirements
+    <Paper sx={{ p: 3 }}>
+      <Grid container spacing={4}>
+        {/* Institutional Requirements */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Institutional Requirements
+          </Typography>
+          {institutionalRequirements.length > 0 ? (
+            institutionalRequirements.map((requirement, index) => (
+              <ChecklistItem
+                key={`institutional-${index}`}
+                title={requirement.title}
+                description={requirement.description}
+                status={requirement.status}
+                details={requirement.details}
+              />
+            ))
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No institutional requirements data available
             </Typography>
-            {institutionalRequirements.length > 0 ? (
-              institutionalRequirements.map((requirement, index) => (
-                <ChecklistItem
-                  key={`institutional-${index}`}
-                  title={requirement.title}
-                  description={requirement.description}
-                  status={requirement.status}
-                  details={requirement.details}
-                />
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No institutional requirements data available
-              </Typography>
-            )}
-          </Grid>
-
-          {/* Academic Requirements */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Academic Requirements
-            </Typography>
-            {academicRequirements.length > 0 ? (
-              academicRequirements.map((requirement, index) => (
-                <ChecklistItem
-                  key={`academic-${index}`}
-                  title={requirement.title}
-                  description={requirement.description}
-                  status={requirement.status}
-                  details={requirement.details}
-                />
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No academic requirements data available
-              </Typography>
-            )}
-          </Grid>
+          )}
         </Grid>
 
-        {/* Summary Box */}
-        <Box
-          sx={{
-            mt: 4,
-            p: 3,
-            bgcolor: "primary.light",
-            borderRadius: 2,
-            border: 1,
-            borderColor: "primary.main",
-          }}
-        >
+        {/* Academic Requirements */}
+        <Grid item xs={12} md={6}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Graduation Status Summary
+            Academic Requirements
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Credits Completed
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {summary.creditsCompleted} / {summary.totalCredits}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Overall Progress
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {summary.overallProgress}%
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Cumulative GPA
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {summary.cumulativeGPA}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Est. Graduation
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {summary.expectedGraduation}
-              </Typography>
-            </Grid>
+          {academicRequirements.length > 0 ? (
+            academicRequirements.map((requirement, index) => (
+              <ChecklistItem
+                key={`academic-${index}`}
+                title={requirement.title}
+                description={requirement.description}
+                status={requirement.status}
+                details={requirement.details}
+              />
+            ))
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No academic requirements data available
+            </Typography>
+          )}
+        </Grid>
+      </Grid>
+
+      {/* Summary Box */}
+      <Box
+        sx={{
+          mt: 4,
+          p: 3,
+          bgcolor: "primary.light",
+          borderRadius: 2,
+          border: 1,
+          borderColor: "primary.main",
+        }}
+      >
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Graduation Status Summary
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Typography variant="body2" color="text.secondary">
+              Credits Completed
+            </Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {summary.creditsCompleted} / {summary.totalCredits}
+            </Typography>
           </Grid>
-        </Box>
-      </Paper>
-    </Box>
-  );
-}
+          <Grid item xs={12} sm={6} md={3}>
+            <Typography variant="body2" color="text.secondary">
+              Overall Progress
+            </Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {summary.overallProgress}%
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Typography variant="body2" color="text.secondary">
+              Cumulative GPA
+            </Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {summary.cumulativeGPA}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Typography variant="body2" color="text.secondary">
+              Est. Graduation
+            </Typography>
+            <Typography variant="h6" fontWeight="bold">
+              {summary.expectedGraduation}
+            </Typography>
+          </Grid>
+        </Grid>
+      </Box>
+    </Paper>
+  </Box>
+);
 
 export default GraduationChecklist;

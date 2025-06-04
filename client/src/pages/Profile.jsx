@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -35,74 +35,6 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingReport, setDownloadingReport] = useState(false);
-
-  useEffect(() => {
-    loadAllProgressData();
-  }, []);
-
-  const loadAllProgressData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load all data in parallel
-      const [detailedProgress, semesterTimeline, graduationRequirements] =
-        await Promise.allSettled([
-          dashboardService.getDetailedProgress(),
-          dashboardService.getSemesterTimeline(),
-          dashboardService.getGraduationRequirements(),
-        ]);
-
-      // Handle detailed progress data
-      if (detailedProgress.status === "fulfilled") {
-        setProgressData(detailedProgress.value);
-      } else {
-        console.error(
-          "Failed to load detailed progress:",
-          detailedProgress.reason
-        );
-        // Fallback to basic progress if detailed fails
-        try {
-          const basicProgress = await dashboardService.getDegreeProgress();
-          setProgressData(getMockProgressData(basicProgress));
-        } catch (fallbackError) {
-          console.error("Fallback progress also failed:", fallbackError);
-          setProgressData(getMockProgressData());
-        }
-      }
-
-      // Handle semester timeline data
-      if (semesterTimeline.status === "fulfilled") {
-        setSemesterData(semesterTimeline.value);
-      } else {
-        console.error(
-          "Failed to load semester timeline:",
-          semesterTimeline.reason
-        );
-        setSemesterData(getMockSemesterData());
-      }
-
-      // Handle graduation requirements data
-      if (graduationRequirements.status === "fulfilled") {
-        setGraduationData(graduationRequirements.value);
-      } else {
-        console.error(
-          "Failed to load graduation requirements:",
-          graduationRequirements.reason
-        );
-        setGraduationData(getMockGraduationData());
-      }
-    } catch (err) {
-      console.error("Failed to load progress data:", err);
-      setError("Failed to load degree progress data");
-      // Set fallback mock data
-      setProgressData(getMockProgressData());
-      setSemesterData(getMockSemesterData());
-      setGraduationData(getMockGraduationData());
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getMockProgressData = (basicData = null) => ({
     student: {
@@ -274,6 +206,68 @@ function Profile() {
     ],
   });
 
+  const loadAllProgressData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [detailedProgress, semesterTimeline, graduationRequirements] =
+        await Promise.allSettled([
+          dashboardService.getDetailedProgress(),
+          dashboardService.getSemesterTimeline(),
+          dashboardService.getGraduationRequirements(),
+        ]);
+
+      if (detailedProgress.status === "fulfilled") {
+        setProgressData(detailedProgress.value);
+      } else {
+        console.error(
+          "Failed to load detailed progress:",
+          detailedProgress.reason
+        );
+        try {
+          const basicProgress = await dashboardService.getDegreeProgress();
+          setProgressData(getMockProgressData(basicProgress));
+        } catch (fallbackError) {
+          console.error("Fallback progress also failed:", fallbackError);
+          setProgressData(getMockProgressData());
+        }
+      }
+
+      if (semesterTimeline.status === "fulfilled") {
+        setSemesterData(semesterTimeline.value);
+      } else {
+        console.error(
+          "Failed to load semester timeline:",
+          semesterTimeline.reason
+        );
+        setSemesterData(getMockSemesterData());
+      }
+
+      if (graduationRequirements.status === "fulfilled") {
+        setGraduationData(graduationRequirements.value);
+      } else {
+        console.error(
+          "Failed to load graduation requirements:",
+          graduationRequirements.reason
+        );
+        setGraduationData(getMockGraduationData());
+      }
+    } catch (err) {
+      console.error("Failed to load progress data:", err);
+      setError("Failed to load degree progress data");
+      setProgressData(getMockProgressData());
+      setSemesterData(getMockSemesterData());
+      setGraduationData(getMockGraduationData());
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadAllProgressData();
+  }, [loadAllProgressData]);
+
   const handleDownloadReport = async () => {
     try {
       setDownloadingReport(true);
@@ -287,7 +281,6 @@ function Profile() {
   };
 
   const handleAskAI = () => {
-    // Navigate to chat with progress context
     window.location.href = "/chat?context=progress";
   };
 
@@ -321,14 +314,12 @@ function Profile() {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Error Banner (non-blocking) */}
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
           Some data may be unavailable: {error}
         </Alert>
       )}
 
-      {/* Breadcrumbs and Header */}
       <Box sx={{ mb: 4 }}>
         <Breadcrumbs
           separator={<NavigateNext fontSize="small" />}
@@ -384,7 +375,6 @@ function Profile() {
         </Box>
       </Box>
 
-      {/* Student Info Card */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box
           sx={{
@@ -423,10 +413,7 @@ function Profile() {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Badge fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  ID:{" "}
-                  {progressData?.student?.studentId ||
-                    user?.w_number ||
-                    "W00123456"}
+                  ID: {progressData?.student?.studentId || "W00123456"}
                 </Typography>
               </Box>
             </Box>
@@ -455,21 +442,14 @@ function Profile() {
         </Box>
       </Paper>
 
-      {/* Progress Overview */}
       {progressData && <ProgressOverview data={progressData} />}
-
-      {/* Requirements Breakdown */}
       {progressData && (
         <RequirementsBreakdown
           categories={progressData.categories}
           progressData={progressData}
         />
       )}
-
-      {/* Semester Timeline */}
       {semesterData && <SemesterTimeline semesterData={semesterData} />}
-
-      {/* Graduation Checklist */}
       {graduationData && <GraduationChecklist data={graduationData} />}
     </Box>
   );

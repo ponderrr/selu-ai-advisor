@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { CheckCircle } from "@mui/icons-material";
 
-const CircularProgress = ({
+const DegreeCircularProgress = ({
   percentage,
   completedCredits,
   totalCredits,
@@ -17,42 +17,46 @@ const CircularProgress = ({
 }) => {
   const canvasRef = useRef(null);
   const theme = useTheme();
-
   useEffect(() => {
+    const dpr = window.devicePixelRatio || 1;
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+  
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+  
     const ctx = canvas.getContext("2d");
-
-    // Clear canvas
+    ctx.scale(dpr, dpr);
+  
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+  
+    const centerX = size / 2;
+    const centerY = size / 2;
     const radius = Math.min(centerX, centerY) - 20;
-
+  
     // Background circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = "#f0f0f0";
     ctx.lineWidth = 12;
     ctx.stroke();
-
+  
     // Progress arc
     const progressAngle = (percentage / 100) * 2 * Math.PI;
     ctx.beginPath();
-    ctx.arc(
-      centerX,
-      centerY,
-      radius,
-      -Math.PI / 2,
-      -Math.PI / 2 + progressAngle
-    );
+    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressAngle);
     ctx.strokeStyle = theme.palette.primary.main;
     ctx.lineWidth = 12;
     ctx.lineCap = "round";
     ctx.stroke();
-  }, [percentage, theme]);
+  
+    return () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }, [percentage, theme, size]);
+  
 
   return (
     <Box sx={{ position: "relative", display: "inline-block" }}>
@@ -224,7 +228,7 @@ function ProgressOverview({ data }) {
               minHeight: 300,
             }}
           >
-            <CircularProgress
+            <DegreeCircularProgress
               percentage={percentage}
               completedCredits={completedCredits}
               totalCredits={totalCredits}

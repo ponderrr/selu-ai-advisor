@@ -23,7 +23,7 @@ const handleApiError = (error, functionName) => {
 };
 
 export const dashboardService = {
-  // Get basic degree progress data (existing)
+  // Get basic degree progress data
   async getDegreeProgress() {
     try {
       const response = await fetch(`${API_BASE_URL}/progress/`, {
@@ -37,11 +37,11 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      return handleApiError(error, "getDegreeProgress");
+      handleApiError(error, "getDegreeProgress");
     }
   },
 
-  // Get detailed progress data with categories, courses, and student info
+  // Get detailed progress data
   async getDetailedProgress() {
     try {
       const response = await fetch(`${API_BASE_URL}/progress/detailed`, {
@@ -57,8 +57,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error fetching detailed progress:", error);
-      throw error;
+      return handleApiError(error, "getDetailedProgress");
     }
   },
 
@@ -83,7 +82,7 @@ export const dashboardService = {
     }
   },
 
-  // Get graduation requirements checklist
+  // Get graduation requirements
   async getGraduationRequirements() {
     try {
       const response = await fetch(
@@ -121,8 +120,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error fetching enhanced profile:", error);
-      throw error;
+      return handleApiError(error, "getEnhancedProfile");
     }
   },
 
@@ -142,8 +140,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      console.error("Error fetching course recommendations:", error);
-      throw error;
+      return handleApiError(error, "getCourseRecommendations");
     }
   },
 
@@ -170,6 +167,15 @@ export const dashboardService = {
 
   // Download progress report
   async downloadProgressReport(format = "pdf") {
+    const allowedFormats = ["pdf", "csv", "xlsx"];
+    if (!allowedFormats.includes(format)) {
+      throw new Error(
+        `Invalid format: ${format}. Allowed formats: ${allowedFormats.join(
+          ", "
+        )}`
+      );
+    }
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/progress/report/download?format=${format}`,
@@ -183,25 +189,14 @@ export const dashboardService = {
         throw new Error(`Failed to download report: ${response.status}`);
       }
 
-      // Handle file download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `degree-progress-report.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      return { success: true };
+      return await response.blob();
     } catch (error) {
       console.error("Error downloading report:", error);
       throw error;
     }
   },
 
-  // Send chat message to AI (existing)
+  // Send chat message to AI
   async sendChatMessage(message, context = null) {
     try {
       const response = await fetch(`${API_BASE_URL}/chat/`, {
@@ -224,14 +219,12 @@ export const dashboardService = {
     }
   },
 
-  // Check AI service health (existing)
+  // Check AI chat health
   async checkChatHealth() {
     try {
       const response = await fetch(`${API_BASE_URL}/chat/health`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -245,7 +238,7 @@ export const dashboardService = {
     }
   },
 
-  // Get user courses (existing)
+  // Get user courses
   async getUserCourses() {
     try {
       const response = await fetch(`${API_BASE_URL}/users/me/`, {
@@ -264,7 +257,7 @@ export const dashboardService = {
     }
   },
 
-  // Search courses (existing)
+  // Search courses
   async searchCourses(query) {
     try {
       const response = await fetch(

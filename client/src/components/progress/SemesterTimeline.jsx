@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Typography, Paper, Chip, Divider } from "@mui/material";
+import PropTypes from "prop-types";
 
 // Fallback mock data
 const getMockSemesterData = () => [
@@ -195,8 +196,21 @@ const SemesterCard = ({ semester, isCurrentSemester = false }) => {
   );
 };
 
+SemesterCard.propTypes = {
+  semester: PropTypes.shape({
+    semester: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    statusColor: PropTypes.string.isRequired,
+    courses: PropTypes.array,
+    credits: PropTypes.number,
+    semesterGPA: PropTypes.number,
+    cumulativeGPA: PropTypes.number,
+    projectedGPA: PropTypes.string,
+  }),
+  isCurrentSemester: PropTypes.bool,
+};
+
 function SemesterTimeline({ semesterData }) {
-  // Use provided data or fallback to mock data
   const semesters =
     semesterData && semesterData.length > 0
       ? semesterData
@@ -245,5 +259,26 @@ function SemesterTimeline({ semesterData }) {
     </Box>
   );
 }
+
+SemesterTimeline.propTypes = {
+  semesterData: PropTypes.arrayOf(
+    PropTypes.shape({
+      semester: PropTypes.string.isRequired,
+      status: PropTypes.oneOf(["Completed", "Current", "Planned"]).isRequired,
+      statusColor: PropTypes.oneOf(["success", "info", "default"]).isRequired,
+      courses: PropTypes.arrayOf(
+        PropTypes.shape({
+          code: PropTypes.string.isRequired,
+          title: PropTypes.string.isRequired,
+          grade: PropTypes.string.isRequired,
+        })
+      ),
+      credits: PropTypes.number,
+      semesterGPA: PropTypes.number,
+      cumulativeGPA: PropTypes.number,
+      projectedGPA: PropTypes.string,
+    })
+  ),
+};
 
 export default SemesterTimeline;

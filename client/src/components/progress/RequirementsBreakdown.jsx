@@ -219,8 +219,8 @@ function RequirementsBreakdown({ categories, progressData }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {courses.map((course, index) => (
-              <TableRow key={index} hover>
+            {courses.map((course) => (
+              <TableRow key={`${course.code}-${course.semester}`} hover>
                 <TableCell sx={{ fontWeight: 500 }}>{course.code}</TableCell>
                 <TableCell>{course.title}</TableCell>
                 <TableCell>{course.credits}</TableCell>
