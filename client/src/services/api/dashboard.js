@@ -57,7 +57,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      return handleApiError(error, "getDetailedProgress");
+      handleApiError(error, "getDetailedProgress");
     }
   },
 
@@ -120,7 +120,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      return handleApiError(error, "getEnhancedProfile");
+      handleApiError(error, "getEnhancedProfile");
     }
   },
 
@@ -140,7 +140,7 @@ export const dashboardService = {
 
       return await response.json();
     } catch (error) {
-      return handleApiError(error, "getCourseRecommendations");
+      handleApiError(error, "getCourseRecommendations");
     }
   },
 

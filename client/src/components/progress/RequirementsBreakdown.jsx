@@ -153,7 +153,7 @@ const getMockRequirementsData = () => ({
   },
 });
 
-function RequirementsBreakdown({ categories, progressData }) {
+function RequirementsBreakdown({ progressData }) {
   const [expanded, setExpanded] = useState(false);
 
   const handleChange = (panel) => (event, isExpanded) => {

@@ -21,42 +21,47 @@ const DegreeCircularProgress = ({
     const dpr = window.devicePixelRatio || 1;
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
-  
+
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
-  
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
     const centerX = size / 2;
     const centerY = size / 2;
     const radius = Math.min(centerX, centerY) - 20;
-  
+
     // Background circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = "#f0f0f0";
     ctx.lineWidth = 12;
     ctx.stroke();
-  
+
     // Progress arc
     const progressAngle = (percentage / 100) * 2 * Math.PI;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressAngle);
+    ctx.arc(
+      centerX,
+      centerY,
+      radius,
+      -Math.PI / 2,
+      -Math.PI / 2 + progressAngle
+    );
     ctx.strokeStyle = theme.palette.primary.main;
     ctx.lineWidth = 12;
     ctx.lineCap = "round";
     ctx.stroke();
-  
+
     return () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
   }, [percentage, theme, size]);
-  
 
   return (
     <Box sx={{ position: "relative", display: "inline-block" }}>
@@ -138,10 +143,18 @@ const GPAChart = ({ overallGPA, majorGPA }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const dpr = window.devicePixelRatio || 1;
     const ctx = canvas.getContext("2d");
 
+    // Set canvas dimensions accounting for device pixel ratio
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+
+    // Scale the context to ensure correct drawing
+    ctx.scale(dpr, dpr);
+
     // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
     // Simple bar chart for GPA
     const barWidth = 40;
@@ -238,7 +251,10 @@ function ProgressOverview({ data }) {
                 display: "flex",
                 alignItems: "center",
                 mt: 2,
-                color: "success.main",
+                color:
+                  student.status === "On Track"
+                    ? "success.main"
+                    : "warning.main",
               }}
             >
               <CheckCircle sx={{ mr: 1 }} />

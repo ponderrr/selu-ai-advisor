@@ -188,6 +188,15 @@ function Profile() {
   ];
 
   const getMockGraduationData = () => ({
+    summary: {
+      creditsCompleted: 78,
+      totalCredits: 120,
+      gpa: 3.53,
+      majorGpa: 3.67,
+      creditsInProgress: 15,
+      remainingRequirements: 3,
+      completedRequirements: 8,
+    },
     institutional: [
       {
         title: "Minimum 120 credit hours",
