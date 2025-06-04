@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User as UserModel
 from app.core.settings import SECRET_KEY, ALGORITHM
 from app.api.endpoints.user.auth import read_current_user
-
+from passlib.context import CryptContext
 class RoleChecker:
     def __init__(self, allowed_roles: list[str]):
         self.allowed_roles = allowed_roles
@@ -14,6 +14,11 @@ class RoleChecker:
     def __call__(self, current_user: Annotated[UserModel, Depends(read_current_user)]):
         if current_user.role not in self.allowed_roles:
             raise HTTPException(status_code=403, detail="Operation not permitted")
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
 
 def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
