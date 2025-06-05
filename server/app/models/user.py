@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, Enum, DateTime, ForeignKey, text
 from enum import Enum as PythonEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -44,6 +44,10 @@ class User(Base):
 
     current_degree_program = relationship("DegreeProgram", backref="enrolled_students", foreign_keys=[current_degree_program_id])
     advisor = relationship("User", remote_side=[id], backref="advisees", foreign_keys=[advisor_id])
-
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),   # every existing row becomes inactive
+    )
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}')>"

@@ -1,9 +1,10 @@
 # app/api/endpoints/course.py
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 import sqlalchemy as sa
 
 from app.core.dependencies import get_db
+from app.models.student_course import StudentCourse
 from app.models.course import Course as CourseModel
 from app.models.enums import CourseCategory, CourseLevel   # ← new path
 from app.schemas.course import CourseCreate, CourseUpdate, CourseRead
@@ -92,12 +93,23 @@ def update_course(
     return course
 
 # ---------------------------------------------------------------------------
-@course_module.delete("/{course_id}", status_code=204)
+@course_module.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_course(course_id: int, db: Session = Depends(get_db)):
     course = db.get(CourseModel, course_id)
     if course is None:
-        raise HTTPException(404, "Course not found")
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    linked = (
+        db.query(StudentCourse)
+        .filter(StudentCourse.course_id == course_id)
+        .first()
+    )
+    if linked:
+        raise HTTPException(
+            status_code=409,
+            detail="Course is still referenced by student-course records",
+        )
 
     db.delete(course)
     db.commit()
-
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

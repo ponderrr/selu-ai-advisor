@@ -18,6 +18,21 @@ def assign_course(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    course = db.query(Course).get(payload.course_id)
+    if course is None:
+        raise HTTPException(404, detail="Course not found")
+
+    exists = (
+        db.query(StudentCourse)
+        .filter(
+            StudentCourse.user_id == current_user.id,
+            StudentCourse.course_id == payload.course_id,
+        )
+        .first()
+    )
+    if exists:
+        raise HTTPException(409, detail="Course already assigned to this student")
+
     record = StudentCourse(
         user_id=current_user.id,
         course_id=payload.course_id,

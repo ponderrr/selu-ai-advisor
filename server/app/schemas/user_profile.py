@@ -1,28 +1,35 @@
-# app/schemas/user_profile.py
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import date
 from enum import Enum as PythonEnum
+from typing import Optional
 
-class ContactMethod(PythonEnum):
+from pydantic import BaseModel, Field
+
+
+class ContactMethod(str, PythonEnum):
     EMAIL = "Email"
     PHONE = "Phone"
-    TEXT = "Text"
-    ANY = "Any"
+    TEXT  = "Text"
+    ANY   = "Any"
+
 
 class ContactInfoSchema(BaseModel):
-    phone_number: Optional[str] = Field(None)
-    preferred_method: Optional[ContactMethod] = Field(None)
-    emergency_name: Optional[str] = Field(None)
-    emergency_phone: Optional[str] = Field(None)
+    phone_number: Optional[str] = None
+    preferred_method: Optional[ContactMethod] = None
+    emergency_name: Optional[str] = None
+    emergency_phone: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        use_enum_values = True          
 
 class AcademicInfoSchema(BaseModel):
-    major: str = Field(...)
-    concentration: Optional[str] = Field(None)
-    expected_graduation: Optional[str] = Field(None)
-    standing: Optional[str] = Field(None)
-    current_semester: Optional[str] = Field(None)
-    campus: Optional[str] = Field(None)
+    major: str
+    concentration: Optional[str] = None
+    expected_graduation: Optional[str] = None
+    standing: Optional[str] = None
+    current_semester: Optional[str] = None
+    campus: Optional[str] = None
+
 
 class UserProfileDetailedResponse(BaseModel):
     id: int
@@ -32,11 +39,12 @@ class UserProfileDetailedResponse(BaseModel):
     w_number: str = Field(..., alias="wNumber")
     email: str
     secondary_email: Optional[str] = Field(None, alias="secondaryEmail")
-    avatar: Optional[str] = Field(None)
+    avatar: Optional[str] = None
 
     academic: AcademicInfoSchema
     contact: ContactInfoSchema
 
     class Config:
+        orm_mode = True
         populate_by_name = True
-        from_attributes = True
+        use_enum_values = True
