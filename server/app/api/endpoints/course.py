@@ -1,4 +1,3 @@
-# app/api/endpoints/course.py
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 import sqlalchemy as sa
@@ -6,7 +5,7 @@ import sqlalchemy as sa
 from app.core.dependencies import get_db
 from app.models.student_course import StudentCourse
 from app.models.course import Course as CourseModel
-from app.models.enums import CourseCategory, CourseLevel   # ← new path
+from app.models.enums import CourseCategory, CourseLevel
 from app.schemas.course import CourseCreate, CourseUpdate, CourseRead
 
 course_module = APIRouter(prefix="/courses", tags=["courses"]) 
@@ -21,7 +20,6 @@ def list_courses(
         q = q.filter(CourseModel.category == category)
     return q.all()
 
-# ---------------------------------------------------------------------------
 @course_module.get("/search", response_model=list[CourseRead])
 def search_courses(q: str, db: Session = Depends(get_db)):
     """
@@ -33,7 +31,6 @@ def search_courses(q: str, db: Session = Depends(get_db)):
         CourseModel.title.ilike(f"%{q_lower}%")
     ]
 
-    # Match level enum name (e.g. "400") or category literal
     try:
         filters.append(CourseModel.level == CourseLevel(q))
     except ValueError:
@@ -49,7 +46,6 @@ def search_courses(q: str, db: Session = Depends(get_db)):
 
     return db.query(CourseModel).filter(sa.or_(*filters)).all()
 
-# ---------------------------------------------------------------------------
 @course_module.get("/{course_id}", response_model=CourseRead)
 def get_course(course_id: int, db: Session = Depends(get_db)):
     course = db.get(CourseModel, course_id)
@@ -57,7 +53,6 @@ def get_course(course_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Course not found")
     return course
 
-# ---------------------------------------------------------------------------
 @course_module.post("/", response_model=CourseRead, status_code=201)
 def create_course(payload: CourseCreate, db: Session = Depends(get_db)):
     try:
@@ -74,7 +69,6 @@ def create_course(payload: CourseCreate, db: Session = Depends(get_db)):
     except TypeError as e:
         raise HTTPException(422, detail=str(e))
 
-# ---------------------------------------------------------------------------
 @course_module.patch("/{course_id}", response_model=CourseRead)
 def update_course(
     course_id: int,
@@ -92,7 +86,6 @@ def update_course(
     db.refresh(course)
     return course
 
-# ---------------------------------------------------------------------------
 @course_module.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_course(course_id: int, db: Session = Depends(get_db)):
     course = db.get(CourseModel, course_id)

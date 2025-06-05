@@ -9,7 +9,7 @@ class StudentCourse(Base):
     user_id   = Column(Integer, ForeignKey("users.id"), nullable=False)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
 
-    completed = Column(Boolean, default=False, nullable=False)   # ← NEW
+    completed = Column(Boolean, default=False, nullable=False)
     grade     = Column(String, nullable=True)
     semester  = Column(String, nullable=True)
     year      = Column(Integer, nullable=True)

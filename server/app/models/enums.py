@@ -3,7 +3,7 @@ from enum import Enum
 class CourseCategory(str, Enum):
     CORE_CS          = "CORE_CS"
     MATH             = "MATH"
-    GENERAL_ED       = "GENERAL_ED"
+    GENERAL_EDUCATION = "GENERAL_EDUCATION"
     ELECTIVE         = "ELECTIVE"
     OTHER            = "OTHER"
     ENGLISH          = "ENGLISH"

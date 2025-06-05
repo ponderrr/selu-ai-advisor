@@ -20,7 +20,7 @@ def build_profile(db: Session, user_id: int) -> UserProfileDetailedResponse | No
     user: User | None = (
         db.query(User)
         .options(
-            joinedload(User.profile),
+            joinedload(User.user_profile),
             joinedload(User.academic_info).joinedload(AcademicInfo.major),
             joinedload(User.academic_info).joinedload(AcademicInfo.concentration),
         )
@@ -31,14 +31,14 @@ def build_profile(db: Session, user_id: int) -> UserProfileDetailedResponse | No
         return None
 
     # contact block
-    if user.profile:
+    if user.user_profile:
         contact = ContactBlock(
-            phone_number=user.profile.phone_number,
-            preferred_method=user.profile.preferred_contact_method,
-            emergency_name=user.profile.emergency_contact_name,
-            emergency_phone=user.profile.emergency_contact_phone,
+            phone_number=user.user_profile.phone_number,
+            preferred_method=user.user_profile.preferred_contact_method,
+            emergency_name=user.user_profile.emergency_contact_name,
+            emergency_phone=user.user_profile.emergency_contact_phone,
         )
-        avatar = user.profile.profile_picture_url
+        avatar = user.user_profile.profile_picture_url
     else:
         contact, avatar = ContactBlock(), None
 
@@ -77,7 +77,7 @@ def build_profile(db: Session, user_id: int) -> UserProfileDetailedResponse | No
 def update_blocks(
     db: Session, user_id: int, payload: ContactBlock | AcademicBlock
 ) -> UserProfileDetailedResponse:
-    profile = (
+    user_profile = (
         db.query(UserProfile)
         .filter(UserProfile.user_id == user_id)
         .first()
@@ -95,8 +95,8 @@ def update_blocks(
     # decide which class we got
     if isinstance(payload, ContactBlock):
         for f, v in data.items():
-            setattr(profile, f, v)
-        db.add(profile)
+            setattr(user_profile, f, v)
+        db.add(user_profile)
     else:
         for f, v in data.items():
             setattr(academic, f, v)
@@ -112,13 +112,13 @@ def save_avatar(
     avatar_name = f"{uuid4().hex}{ext}"
     (MEDIA_ROOT / avatar_name).write_bytes(file_bytes)
 
-    profile = (
+    user_profile = (
         db.query(UserProfile)
         .filter(UserProfile.user_id == user_id)
         .first()
         or UserProfile(user_id=user_id)
     )
-    profile.profile_picture_url = f"/static/avatars/{avatar_name}"
-    db.add(profile)
+    user_profile.profile_picture_url = f"/static/avatars/{avatar_name}"
+    db.add(user_profile)
     db.commit()
     return build_profile(db, user_id)
