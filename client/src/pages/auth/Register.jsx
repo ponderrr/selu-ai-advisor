@@ -85,17 +85,133 @@ function Register() {
       [name]: value,
     }));
 
+<<<<<<< Updated upstream
     // Clear field error when user starts typing
     if (formErrors[name]) {
       setFormErrors((prev) => ({
+=======
+  const generateWNumber = () => {
+    // Generate a 7-digit W number (you might want to get this from backend)
+    const randomDigits = Math.floor(Math.random() * 9999999)
+      .toString()
+      .padStart(7, "0");
+    return `W${randomDigits}`;
+  };
+
+  const handleRegistrationSubmit = async (formData) => {
+    try {
+      const registrationPayload = {
+        // User basic info
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        wNumber: formData.studentId || generateWNumber(),
+
+        // Academic info
+        academic: {
+          status: formData.status,
+          expectedGraduation: formData.expectedGraduation,
+          classStanding: formData.classStanding,
+          major: "Computer Science", // Default for now
+        },
+
+        // Preferences
+        preferredName: formData.preferredName,
+
+        // Agreements
+        agreements: {
+          termsOfService: formData.agreeTerms,
+          codeOfConduct: formData.agreeCode,
+          ferpaConsent: true,
+        },
+      };
+
+      setRegistrationData(registrationPayload);
+
+      // Send registration request that triggers email verification
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(registrationPayload),
+        }
+      );
+
+      if (response.ok) {
+        // Move to verification step
+        setCurrentStep("verification");
+        setVerificationData((prev) => ({
+          ...prev,
+          loading: false,
+          error: null,
+          resendCooldown: 120, // 2 minutes
+        }));
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Registration failed");
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      // Error will be handled by auth context
+    }
+  };
+
+  const handleVerificationSubmit = async (code) => {
+    try {
+      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
+
+      // Verify the email and complete registration
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/verify-registration`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: registrationData.email,
+            code,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Complete registration through auth context
+        const result = await register(registrationData);
+
+        if (result.success) {
+          navigate("/", { replace: true });
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Invalid verification code");
+      }
+    } catch (err) {
+      console.error("Verification error:", err);
+      setVerificationData((prev) => ({
+>>>>>>> Stashed changes
         ...prev,
         [name]: "",
       }));
     }
   };
 
+<<<<<<< Updated upstream
   const validateForm = () => {
     const errors = {};
+=======
+  const handleResendCode = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/resend-registration-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: registrationData.email }),
+        }
+      );
+>>>>>>> Stashed changes
 
     if (!formData.firstName.trim()) {
       errors.firstName = "First name is required";

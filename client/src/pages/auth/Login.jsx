@@ -55,17 +55,150 @@ function Login() {
       [name]: value,
     }));
 
+<<<<<<< Updated upstream
     // Clear field error when user starts typing
     if (formErrors[name]) {
       setFormErrors((prev) => ({
+=======
+    intervalIdRef.current = setInterval(() => {
+      setVerificationData((prevData) => {
+        if (prevData.resendCooldown > 0) {
+          const newCooldown = prevData.resendCooldown - 1;
+          if (newCooldown === 0) {
+            // Countdown finished. Clear the interval.
+            if (intervalIdRef.current) {
+              clearInterval(intervalIdRef.current);
+              intervalIdRef.current = null; // Mark as cleared
+            }
+          }
+          return { ...prevData, resendCooldown: newCooldown };
+        } else {
+          // Cooldown is already 0 or less.
+          // If an interval is somehow still running, clear it.
+          if (intervalIdRef.current) {
+            clearInterval(intervalIdRef.current);
+            intervalIdRef.current = null; // Mark as cleared
+          }
+          return prevData; // No change to state
+        }
+      });
+    }, 1000);
+
+    // Cleanup function for unmount
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array: runs on mount, cleans on unmount.
+
+  const handleEmailSubmit = async (formData) => {
+    try {
+      setEmailData(formData);
+
+      // For now, simulate sending OTP
+      // Replace with actual API call to send OTP
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/send-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            rememberDevice: formData.rememberDevice,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setCurrentStep("verification");
+        setVerificationData((prev) => ({
+          ...prev,
+          loading: false,
+          error: null,
+          resendCooldown: 120, // 2 minutes
+        }));
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to send verification code");
+      }
+    } catch (err) {
+      console.error("Email submission error:", err);
+      // Handle error through auth context or local state
+    }
+  };
+
+  const handleVerificationSubmit = async (code) => {
+    try {
+      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
+
+      // Call your verification endpoint
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/verify-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: emailData.email,
+            code,
+            rememberDevice: emailData.rememberDevice,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        // Backend should now issue an HttpOnly, SameSite cookie upon successful OTP verification.
+        // Tokens are no longer stored in localStorage.
+
+        // The login function from AuthContext is called to update client-side auth state.
+        // This function should now rely on the HttpOnly cookie.
+        // Review AuthContext.login to ensure its parameters (email, code) are still
+        // appropriate or if it can be simplified for a cookie-based session.
+        const result = await login(emailData.email, code);
+
+        if (result.success) {
+          setVerificationData((prev) => ({ ...prev, loading: false })); // Reset loading before navigation
+          const from = location.state?.from?.pathname || "/";
+          navigate(from, { replace: true });
+        } else {
+          // Handle failure from AuthContext.login (e.g., if user fetch failed or login was unsuccessful)
+          setVerificationData((prev) => ({
+            ...prev,
+            loading: false,
+            error: result.error || "Login failed after OTP verification.",
+          }));
+        }
+      } else {
+        const errorData = await response.json();
+        // This error will be caught by the catch block below, which sets loading to false.
+        throw new Error(errorData.detail || "Invalid verification code");
+      }
+    } catch (err) {
+      console.error("Verification error:", err);
+      setVerificationData((prev) => ({
+>>>>>>> Stashed changes
         ...prev,
         [name]: "",
       }));
     }
   };
 
+<<<<<<< Updated upstream
   const validateForm = () => {
     const errors = {};
+=======
+  const handleResendCode = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/resend-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailData.email }),
+        }
+      );
+>>>>>>> Stashed changes
 
     if (!formData.email) {
       errors.email = "Email is required";
