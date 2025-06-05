@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 from fastapi import APIRouter, Depends, HTTPException, status, Response
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -18,7 +19,7 @@ from app.schemas.otp import OTPVerifyRequest
 
 logger = logging.getLogger(__name__)
 
-user_module = APIRouter(prefix="/users", tags=["users"])
+user_module = APIRouter(tags=["users"])
 
 @user_module.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_new_user(payload: UserCreate, db: Session = Depends(get_db)):
@@ -69,7 +70,7 @@ def verify_otp_endpoint(
     db.commit()
     return Response(status_code=204)
 
-@user_module.get("/", response_model=list[User])
+@user_module.get("/user", response_model=list[User])
 def read_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return user_functions.read_all_user(db, skip, limit)
 
@@ -123,5 +124,21 @@ def update_user(
 
 @user_module.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user_functions.delete_user(db, user_id)
+    user = db.get(UserModel, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    try:
+        db.delete(user)
+        db.commit()
+        logger.info(f"Successfully deleted user {user_id} and all related records")
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Could not delete user due to database constraints"
+        )
+    
     return Response(status_code=status.HTTP_204_NO_CONTENT)

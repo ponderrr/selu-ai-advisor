@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from "react";
 import { authService } from "../services/api/auth";
 
 const AuthContext = createContext();
@@ -61,12 +61,7 @@ function authReducer(state, action) {
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check for existing token on app load
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       dispatch({ type: authActions.SET_LOADING, payload: true });
 
@@ -76,7 +71,6 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // Verify token and get user data
       const userData = await authService.getCurrentUser();
       dispatch({
         type: authActions.LOGIN_SUCCESS,
@@ -84,20 +78,21 @@ export function AuthProvider({ children }) {
       });
     } catch (error) {
       console.log("Auth check failed:", error.message);
-      // Remove invalid tokens
       localStorage.removeItem("authToken");
       localStorage.removeItem("refreshToken");
       dispatch({ type: authActions.SET_LOADING, payload: false });
     }
-  };
+  }, []);
 
-  const login = async (email, password) => {
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  const login = useCallback(async (email, password) => {
     try {
       dispatch({ type: authActions.SET_LOADING, payload: true });
 
       const response = await authService.login(email, password);
-
-      // Get user info after successful login
       const userData = await authService.getCurrentUser();
 
       dispatch({
@@ -113,15 +108,13 @@ export function AuthProvider({ children }) {
       });
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       dispatch({ type: authActions.SET_LOADING, payload: true });
 
       const response = await authService.register(userData);
-
-      // Get user info after successful registration & auto-login
       const userInfo = await authService.getCurrentUser();
 
       dispatch({
@@ -137,16 +130,16 @@ export function AuthProvider({ children }) {
       });
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     dispatch({ type: authActions.LOGOUT });
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: authActions.CLEAR_ERROR });
-  };
+  }, []);
 
   const value = {
     ...state,
