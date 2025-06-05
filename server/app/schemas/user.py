@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
 from app.utils.constant.globals import UserRole
@@ -8,9 +8,12 @@ class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
+    w_number: str = Field(..., pattern=r"(?i)^w\d{7}$", to_upper=True)
+    email: EmailStr
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
 
 class UserLogin(BaseModel):
     email: EmailStr

@@ -1,30 +1,55 @@
-from sqlalchemy import Column, Integer, String, Enum
-from enum import Enum as PythonEnum
-from sqlalchemy.orm import relationship 
+# app/models/user.py   ← keep this single copy
+from enum import Enum as PyEnum
+from sqlalchemy import (
+    Boolean, Column, Integer, String, Enum, DateTime, ForeignKey, text
+)
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from app.models.notification_settings import NotificationSettings
 from app.core.database import Base
-from app.utils.constant.globals import UserRole
 
-# Define UserRole Enum if not already done inside globals
-class UserRole(PythonEnum):
+class UserRole(PyEnum):
     STUDENT = "student"
     ADVISOR = "advisor"
-    ADMIN = "admin"
+    ADMIN   = "admin"
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    w_number = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=True) 
-    first_name = Column(String, nullable=True)
-    last_name = Column(String, nullable=True)
-    role = Column(Enum(UserRole), default=UserRole.STUDENT) 
+    id        = Column(Integer, primary_key=True, index=True)
+    w_number  = Column(String, unique=True, nullable=False)
+    email     = Column(String, unique=True, index=True, nullable=False)
+    password  = Column(String, nullable=True)
+    first_name = Column(String)
+    last_name  = Column(String)
+    role       = Column(Enum(UserRole), nullable=False, default=UserRole.STUDENT)
 
-    completed_courses = relationship("StudentCourse", back_populates="student")
-    chat_messages = relationship("ChatMessage", back_populates="user")
+    # Relationships
+    completed_courses     = relationship("StudentCourse", back_populates="student")
+    chat_messages         = relationship("ChatMessage", back_populates="user")
 
-    def __repr__(self):
-        return f"{self.email}"
+    user_profile          = relationship("UserProfile", back_populates="user",
+                                          uselist=False, cascade="all, delete-orphan")
+    academic_info         = relationship("AcademicInfo", back_populates="user",
+                                          uselist=False, cascade="all, delete-orphan")
 
-from app.models.chat_message import ChatMessage
+    current_degree_program_id = Column(Integer, ForeignKey("degree_programs.id"))
+    current_degree_program    = relationship("DegreeProgram",
+                                             backref="enrolled_students",
+                                             foreign_keys=[current_degree_program_id])
+
+    advisor_id  = Column(Integer, ForeignKey("users.id"))
+    advisor     = relationship("User", remote_side=[id],
+                               backref="advisees", foreign_keys=[advisor_id])
+
+    preferred_name         = Column(String)
+    secondary_email        = Column(String)
+    expected_graduation_year = Column(Integer)
+
+    is_active  = Column(Boolean, server_default=text("false"), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(),
+                        onupdate=func.now(), nullable=False)
+
+    notification_settings = relationship("NotificationSettings", back_populates="user", uselist=False)

@@ -1,8 +1,8 @@
-"""refactor student_courses to reference users
+"""add completed flag to student_courses
 
-Revision ID: 67338b1c3be9
-Revises: 6051bfa3e74a
-Create Date: 2025-05-31 15:00:17.088041
+Revision ID: 37c14ce0039d
+Revises: c4458146180c
+Create Date: 2025-06-04 17:40:07.796776
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '67338b1c3be9'
-down_revision: Union[str, None] = '6051bfa3e74a'
+revision: str = '37c14ce0039d'
+down_revision: Union[str, None] = 'c4458146180c'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

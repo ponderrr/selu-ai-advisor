@@ -1,8 +1,8 @@
-"""add w_number to users
+"""add Computer Science to coursecategory enum
 
-Revision ID: f476538e5d08
-Revises: 0cc14409b8a1
-Create Date: 2025-05-31 15:11:53.332438
+Revision ID: df599d664928
+Revises: a44e17055dba
+Create Date: 2025-06-04 16:47:23.433829
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f476538e5d08'
-down_revision: Union[str, None] = '0cc14409b8a1'
+revision: str = 'df599d664928'
+down_revision: Union[str, None] = 'a44e17055dba'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
