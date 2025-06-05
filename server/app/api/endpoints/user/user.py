@@ -8,7 +8,7 @@ from app.core.security import get_current_user, get_password_hash
 from app.models.user import User as UserModel, UserRole
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.schemas.user_profile import UserProfileDetailedResponse
-from app.services.user_profile_service import get_user_profile_detailed
+from app.services.user_profile_service import build_profile
 from app.api.endpoints.user import functions as user_functions
 
 import logging
@@ -19,18 +19,6 @@ from app.schemas.otp import OTPVerifyRequest
 logger = logging.getLogger(__name__)
 
 user_module = APIRouter(prefix="/users", tags=["users"])
-
-
-@user_module.get("/me/profile", response_model=UserProfileDetailedResponse)
-async def get_my_profile(                     
-    current_user: UserModel = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    profile = await get_user_profile_detailed(db, current_user.id) 
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
-
 
 @user_module.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_new_user(payload: UserCreate, db: Session = Depends(get_db)):

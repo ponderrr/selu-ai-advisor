@@ -1,54 +1,124 @@
 # app/services/user_profile_service.py
+from pathlib import Path
+from uuid import uuid4
 from sqlalchemy.orm import Session, joinedload
+
 from app.models.user import User
 from app.models.user_profile import UserProfile
 from app.models.academic_info import AcademicInfo
-from app.models.major import Major # Assuming this model exists
-from app.models.concentration import Concentration # Assuming this model exists
-from app.schemas.user_profile import UserProfileDetailedResponse, AcademicInfoSchema, ContactInfoSchema
+from app.schemas.user_profile import (
+    AcademicBlock,
+    ContactBlock,
+    UserProfileDetailedResponse,
+)
 
-async def get_user_profile_detailed(db: Session, user_id: int) -> UserProfileDetailedResponse:
-    user = db.query(User).options(
-        joinedload(User.user_profile),
-        joinedload(User.academic_info).joinedload(AcademicInfo.major),
-        joinedload(User.academic_info).joinedload(AcademicInfo.concentration)
-    ).filter(User.id == user_id).first()
+MEDIA_ROOT = Path("media/avatars")
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
-    if not user:
-        raise ValueError("User not found.")
 
-    contact_info = ContactInfoSchema(
-        phone_number=user.user_profile.phone_number if user.user_profile else None,
-        preferred_method=user.user_profile.preferred_contact_method if user.user_profile else None,
-        emergency_name=user.user_profile.emergency_contact_name if user.user_profile else None,
-        emergency_phone=user.user_profile.emergency_contact_phone if user.user_profile else None,
+def build_profile(db: Session, user_id: int) -> UserProfileDetailedResponse | None:
+    user: User | None = (
+        db.query(User)
+        .options(
+            joinedload(User.profile),
+            joinedload(User.academic_info).joinedload(AcademicInfo.major),
+            joinedload(User.academic_info).joinedload(AcademicInfo.concentration),
+        )
+        .filter(User.id == user_id)
+        .first()
     )
+    if user is None:
+        return None
 
-    # Prepare AcademicInfoSchema
-    # Need to handle potential None for academic_info, major, concentration
-    major_name = user.academic_info.major.name if user.academic_info and user.academic_info.major else None
-    concentration_name = user.academic_info.concentration.name if user.academic_info and user.academic_info.concentration else None
+    # contact block
+    if user.profile:
+        contact = ContactBlock(
+            phone_number=user.profile.phone_number,
+            preferred_method=user.profile.preferred_contact_method,
+            emergency_name=user.profile.emergency_contact_name,
+            emergency_phone=user.profile.emergency_contact_phone,
+        )
+        avatar = user.profile.profile_picture_url
+    else:
+        contact, avatar = ContactBlock(), None
 
-    academic_info = AcademicInfoSchema(
-        major=major_name if major_name else "N/A", # Default if no major
-        concentration=concentration_name,
-        expected_graduation=f"{user.academic_info.expected_graduation_semester} {user.academic_info.expected_graduation_year}" if user.academic_info and user.academic_info.expected_graduation_semester and user.academic_info.expected_graduation_year else None,
-        standing=user.academic_info.academic_standing if user.academic_info else None,
-        current_semester=user.academic_info.current_semester if user.academic_info else None,
-        campus=user.academic_info.campus if user.academic_info else None,
-    )
+    # academic block
+    if user.academic_info:
+        ai = user.academic_info
+        academic = AcademicBlock(
+            major=ai.major.name if ai.major else "Undeclared",
+            concentration=ai.concentration.name if ai.concentration else None,
+            expected_graduation=(
+                f"{ai.expected_graduation_semester} {ai.expected_graduation_year}"
+                if ai.expected_graduation_year
+                else None
+            ),
+            standing=ai.academic_standing,
+            current_semester=ai.current_semester,
+            campus=ai.campus,
+        )
+    else:
+        academic = AcademicBlock(major="Undeclared")
 
-    # Prepare UserProfileDetailedResponse
-    profile_response = UserProfileDetailedResponse(
+    return UserProfileDetailedResponse(
         id=user.id,
-        firstName=user.first_name,
-        lastName=user.last_name,
-        preferredName=user.preferred_name,
-        wNumber=user.w_number,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        preferred_name=user.preferred_name,
+        w_number=user.w_number,
         email=user.email,
-        secondaryEmail=user.secondary_email,
-        avatar=user.user_profile.profile_picture_url if user.user_profile else None,
-        academic=academic_info,
-        contact=contact_info
+        secondary_email=user.secondary_email,
+        avatar=avatar,
+        academic=academic,
+        contact=contact,
     )
-    return profile_response
+
+
+def update_blocks(
+    db: Session, user_id: int, payload: ContactBlock | AcademicBlock
+) -> UserProfileDetailedResponse:
+    profile = (
+        db.query(UserProfile)
+        .filter(UserProfile.user_id == user_id)
+        .first()
+        or UserProfile(user_id=user_id)
+    )
+    academic = (
+        db.query(AcademicInfo)
+        .filter(AcademicInfo.user_id == user_id)
+        .first()
+        or AcademicInfo(user_id=user_id)
+    )
+
+    data = payload.model_dump(exclude_unset=True)
+
+    # decide which class we got
+    if isinstance(payload, ContactBlock):
+        for f, v in data.items():
+            setattr(profile, f, v)
+        db.add(profile)
+    else:
+        for f, v in data.items():
+            setattr(academic, f, v)
+        db.add(academic)
+
+    db.commit()
+    return build_profile(db, user_id)
+
+
+def save_avatar(
+    db: Session, user_id: int, file_bytes: bytes, ext: str
+) -> UserProfileDetailedResponse:
+    avatar_name = f"{uuid4().hex}{ext}"
+    (MEDIA_ROOT / avatar_name).write_bytes(file_bytes)
+
+    profile = (
+        db.query(UserProfile)
+        .filter(UserProfile.user_id == user_id)
+        .first()
+        or UserProfile(user_id=user_id)
+    )
+    profile.profile_picture_url = f"/static/avatars/{avatar_name}"
+    db.add(profile)
+    db.commit()
+    return build_profile(db, user_id)

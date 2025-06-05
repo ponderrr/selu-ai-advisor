@@ -49,5 +49,15 @@ class User(Base):
         nullable=False,
         server_default=text("false"),   # every existing row becomes inactive
     )
-    def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}')>"
+    profile = relationship(
+        "UserProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    ) 
+    academic_info = relationship(
+        "AcademicInfo",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

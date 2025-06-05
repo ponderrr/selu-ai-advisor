@@ -1,35 +1,30 @@
-from datetime import date
-from enum import Enum as PythonEnum
 from typing import Optional
-
+from enum import Enum
 from pydantic import BaseModel, Field
 
-
-class ContactMethod(str, PythonEnum):
+class ContactMethod(str, Enum):
     EMAIL = "Email"
     PHONE = "Phone"
     TEXT  = "Text"
     ANY   = "Any"
 
-
-class ContactInfoSchema(BaseModel):
-    phone_number: Optional[str] = None
-    preferred_method: Optional[ContactMethod] = None
-    emergency_name: Optional[str] = None
-    emergency_phone: Optional[str] = None
-
-    class Config:
-        orm_mode = True
-        use_enum_values = True          
-
-class AcademicInfoSchema(BaseModel):
+class AcademicBlock(BaseModel):
     major: str
     concentration: Optional[str] = None
-    expected_graduation: Optional[str] = None
+    expected_graduation: Optional[str] = Field(None, alias="expectedGraduation")
     standing: Optional[str] = None
-    current_semester: Optional[str] = None
+    current_semester: Optional[str] = Field(None, alias="currentSemester")
     campus: Optional[str] = None
 
+    model_config = {"orm_mode": True, "populate_by_name": True, "use_enum_values": True}
+
+class ContactBlock(BaseModel):
+    phone_number: Optional[str] = Field(None, alias="phoneNumber")
+    preferred_method: Optional[ContactMethod] = Field(None, alias="preferredMethod")
+    emergency_name: Optional[str] = Field(None, alias="emergencyName")
+    emergency_phone: Optional[str] = Field(None, alias="emergencyPhone")
+
+    model_config = {"orm_mode": True, "populate_by_name": True, "use_enum_values": True}
 
 class UserProfileDetailedResponse(BaseModel):
     id: int
@@ -40,11 +35,8 @@ class UserProfileDetailedResponse(BaseModel):
     email: str
     secondary_email: Optional[str] = Field(None, alias="secondaryEmail")
     avatar: Optional[str] = None
+    academic: AcademicBlock
+    contact: ContactBlock
 
-    academic: AcademicInfoSchema
-    contact: ContactInfoSchema
+    model_config = {"orm_mode": True, "populate_by_name": True, "use_enum_values": True}
 
-    class Config:
-        orm_mode = True
-        populate_by_name = True
-        use_enum_values = True
