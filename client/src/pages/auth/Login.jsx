@@ -13,9 +13,8 @@ const Login = () => {
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const intervalIdRef = useRef(null); // Keep track of the interval ID
-
-  const [currentStep, setCurrentStep] = useState("signin"); // "signin" | "verification"
+  const intervalIdRef = useRef(null);
+  const [currentStep, setCurrentStep] = useState("signin");
   const [emailData, setEmailData] = useState({
     email: "",
     rememberDevice: false,
@@ -26,7 +25,6 @@ const Login = () => {
     resendCooldown: 0,
   });
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const from = location.state?.from?.pathname || "/";
@@ -34,56 +32,44 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, location.state]);
 
-  // Clear errors when component mounts
   useEffect(() => {
     clearError();
   }, [clearError]);
 
-  // Handle countdown timer for resend
   useEffect(() => {
-    // This effect runs once on mount.
-    // It sets up an interval that will call setVerificationData.
-    // setVerificationData's callback will decide if the interval should continue.
-
     intervalIdRef.current = setInterval(() => {
       setVerificationData((prevData) => {
         if (prevData.resendCooldown > 0) {
           const newCooldown = prevData.resendCooldown - 1;
           if (newCooldown === 0) {
-            // Countdown finished. Clear the interval.
             if (intervalIdRef.current) {
               clearInterval(intervalIdRef.current);
-              intervalIdRef.current = null; // Mark as cleared
+              intervalIdRef.current = null;
             }
           }
           return { ...prevData, resendCooldown: newCooldown };
         } else {
-          // Cooldown is already 0 or less.
-          // If an interval is somehow still running, clear it.
           if (intervalIdRef.current) {
             clearInterval(intervalIdRef.current);
-            intervalIdRef.current = null; // Mark as cleared
+            intervalIdRef.current = null;
           }
-          return prevData; // No change to state
+          return prevData;
         }
       });
     }, 1000);
 
-    // Cleanup function for unmount
     return () => {
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
       }
     };
-  }, []); // Empty dependency array: runs on mount, cleans on unmount.
+  }, []);
 
   const handleEmailSubmit = async (formData) => {
     try {
       setEmailData(formData);
 
-      // For now, simulate sending OTP
-      // Replace with actual API call to send OTP
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/send-otp`,
         {
@@ -102,7 +88,7 @@ const Login = () => {
           ...prev,
           loading: false,
           error: null,
-          resendCooldown: 120, // 2 minutes
+          resendCooldown: 120,
         }));
       } else {
         const errorData = await response.json();
@@ -110,7 +96,6 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Email submission error:", err);
-      // Handle error through auth context or local state
     }
   };
 
@@ -118,7 +103,6 @@ const Login = () => {
     try {
       setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Call your verification endpoint
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
         {
@@ -133,21 +117,12 @@ const Login = () => {
       );
 
       if (response.ok) {
-        // Backend should now issue an HttpOnly, SameSite cookie upon successful OTP verification.
-        // Tokens are no longer stored in localStorage.
-
-        // The login function from AuthContext is called to update client-side auth state.
-        // This function should now rely on the HttpOnly cookie.
-        // Review AuthContext.login to ensure its parameters (email, code) are still
-        // appropriate or if it can be simplified for a cookie-based session.
         const result = await login(emailData.email, code);
-
         if (result.success) {
-          setVerificationData((prev) => ({ ...prev, loading: false })); // Reset loading before navigation
+          setVerificationData((prev) => ({ ...prev, loading: false }));
           const from = location.state?.from?.pathname || "/";
           navigate(from, { replace: true });
         } else {
-          // Handle failure from AuthContext.login (e.g., if user fetch failed or login was unsuccessful)
           setVerificationData((prev) => ({
             ...prev,
             loading: false,
@@ -156,7 +131,6 @@ const Login = () => {
         }
       } else {
         const errorData = await response.json();
-        // This error will be caught by the catch block below, which sets loading to false.
         throw new Error(errorData.detail || "Invalid verification code");
       }
     } catch (err) {
@@ -235,7 +209,6 @@ const Login = () => {
         />
       )}
 
-      {/* Footer */}
       <Box
         sx={{
           position: "fixed",

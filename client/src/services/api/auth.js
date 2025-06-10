@@ -5,7 +5,7 @@ export const authService = {
   // Login with email and password (matches your backend)
   async login(email, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,7 +46,7 @@ export const authService = {
   async register(userData) {
     try {
       // First create the user account
-      const response = await fetch(`${API_BASE_URL}/users/`, {
+      const response = await fetch(`${API_BASE_URL}users/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +99,7 @@ export const authService = {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/users/me/`, {
+      const response = await fetch(`${API_BASE_URL}auth/users/me/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -136,7 +136,7 @@ export const authService = {
         throw new Error("No refresh token available");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}auth/refresh`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -170,7 +170,7 @@ export const authService = {
   // Verify if current token is valid
   async verifyToken(token) {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/users/me/`, {
+      const response = await fetch(`${API_BASE_URL}auth/users/me/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
