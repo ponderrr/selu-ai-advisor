@@ -1,41 +1,30 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Paper,
-  TextField,
-  Button,
-  Typography,
-  Link,
-  Alert,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
-} from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
-  Email,
-  Lock,
-  School,
-} from "@mui/icons-material";
-import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Box, Typography } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
-import { validateEmail } from "../../services/validation/authValidation";
+import {
+  AuthLayout,
+  SignInForm,
+  EmailVerificationForm,
+} from "../../components/auth";
 
-function Login() {
+const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const [formData, setFormData] = useState({
+  const intervalIdRef = useRef(null);
+  const [currentStep, setCurrentStep] = useState("signin");
+  const [emailData, setEmailData] = useState({
     email: "",
-    password: "",
+    rememberDevice: false,
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationData, setVerificationData] = useState({
+    loading: false,
+    error: null,
+    resendCooldown: 0,
+  });
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const from = location.state?.from?.pathname || "/";
@@ -43,64 +32,46 @@ function Login() {
     }
   }, [isAuthenticated, navigate, location.state]);
 
-  // Clear errors when component mounts
   useEffect(() => {
     clearError();
   }, [clearError]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-<<<<<<< Updated upstream
-    // Clear field error when user starts typing
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({
-=======
+  useEffect(() => {
     intervalIdRef.current = setInterval(() => {
       setVerificationData((prevData) => {
         if (prevData.resendCooldown > 0) {
           const newCooldown = prevData.resendCooldown - 1;
           if (newCooldown === 0) {
-            // Countdown finished. Clear the interval.
             if (intervalIdRef.current) {
               clearInterval(intervalIdRef.current);
-              intervalIdRef.current = null; // Mark as cleared
+              intervalIdRef.current = null;
             }
           }
           return { ...prevData, resendCooldown: newCooldown };
         } else {
-          // Cooldown is already 0 or less.
-          // If an interval is somehow still running, clear it.
           if (intervalIdRef.current) {
             clearInterval(intervalIdRef.current);
-            intervalIdRef.current = null; // Mark as cleared
+            intervalIdRef.current = null;
           }
-          return prevData; // No change to state
+          return prevData;
         }
       });
     }, 1000);
 
-    // Cleanup function for unmount
     return () => {
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
       }
     };
-  }, []); // Empty dependency array: runs on mount, cleans on unmount.
+  }, []);
 
   const handleEmailSubmit = async (formData) => {
     try {
       setEmailData(formData);
 
-      // For now, simulate sending OTP
-      // Replace with actual API call to send OTP
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/send-otp`,
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/send-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -117,7 +88,7 @@ function Login() {
           ...prev,
           loading: false,
           error: null,
-          resendCooldown: 120, // 2 minutes
+          resendCooldown: 120,
         }));
       } else {
         const errorData = await response.json();
@@ -125,7 +96,6 @@ function Login() {
       }
     } catch (err) {
       console.error("Email submission error:", err);
-      // Handle error through auth context or local state
     }
   };
 
@@ -133,9 +103,8 @@ function Login() {
     try {
       setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Call your verification endpoint
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/verify-otp`,
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -148,21 +117,12 @@ function Login() {
       );
 
       if (response.ok) {
-        // Backend should now issue an HttpOnly, SameSite cookie upon successful OTP verification.
-        // Tokens are no longer stored in localStorage.
-
-        // The login function from AuthContext is called to update client-side auth state.
-        // This function should now rely on the HttpOnly cookie.
-        // Review AuthContext.login to ensure its parameters (email, code) are still
-        // appropriate or if it can be simplified for a cookie-based session.
         const result = await login(emailData.email, code);
-
         if (result.success) {
-          setVerificationData((prev) => ({ ...prev, loading: false })); // Reset loading before navigation
+          setVerificationData((prev) => ({ ...prev, loading: false }));
           const from = location.state?.from?.pathname || "/";
           navigate(from, { replace: true });
         } else {
-          // Handle failure from AuthContext.login (e.g., if user fetch failed or login was unsuccessful)
           setVerificationData((prev) => ({
             ...prev,
             loading: false,
@@ -171,197 +131,152 @@ function Login() {
         }
       } else {
         const errorData = await response.json();
-        // This error will be caught by the catch block below, which sets loading to false.
         throw new Error(errorData.detail || "Invalid verification code");
       }
     } catch (err) {
       console.error("Verification error:", err);
       setVerificationData((prev) => ({
->>>>>>> Stashed changes
         ...prev,
-        [name]: "",
+        loading: false,
+        error: err.message,
       }));
     }
   };
 
-<<<<<<< Updated upstream
-  const validateForm = () => {
-    const errors = {};
-=======
   const handleResendCode = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}auth/resend-otp`,
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/resend-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: emailData.email }),
         }
       );
->>>>>>> Stashed changes
 
-    if (!formData.email) {
-      errors.email = "Email is required";
-    } else if (!validateEmail(formData.email)) {
-      errors.email = "Please enter a valid email address";
-    } else if (!formData.email.endsWith("@selu.edu")) {
-      errors.email = "Please use your SELU email address (@selu.edu)";
+      if (response.ok) {
+        setVerificationData((prev) => ({
+          ...prev,
+          resendCooldown: 120,
+          error: null,
+        }));
+      } else {
+        throw new Error("Failed to resend code");
+      }
+    } catch (err) {
+      console.error("Resend error:", err);
+      setVerificationData((prev) => ({
+        ...prev,
+        error: "Failed to resend code. Please try again.",
+      }));
     }
-
-    if (!formData.password) {
-      errors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await login(formData.email, formData.password);
-    setIsSubmitting(false);
-
-    if (result.success) {
-      const from = location.state?.from?.pathname || "/";
-      navigate(from, { replace: true });
-    }
-    // Error handling is done by AuthContext
+  const handleBackToEmail = () => {
+    setCurrentStep("signin");
+    setVerificationData({
+      loading: false,
+      error: null,
+      resendCooldown: 0,
+    });
+    clearError();
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  const handleSwitchToSignUp = () => {
+    navigate("/register");
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "background.default",
-        backgroundImage: "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-      }}
-    >
-      <Paper
-        elevation={8}
+    <AuthLayout>
+      {currentStep === "signin" && (
+        <SignInForm
+          onSwitchToSignUp={handleSwitchToSignUp}
+          onEmailSubmit={handleEmailSubmit}
+          loading={isLoading}
+          error={error}
+        />
+      )}
+
+      {currentStep === "verification" && (
+        <EmailVerificationForm
+          email={emailData.email}
+          onVerify={handleVerificationSubmit}
+          onResendCode={handleResendCode}
+          onBackToEmail={handleBackToEmail}
+          loading={verificationData.loading}
+          error={verificationData.error}
+          resendCooldown={verificationData.resendCooldown}
+        />
+      )}
+
+      <Box
         sx={{
-          p: 4,
-          width: "100%",
-          maxWidth: 400,
-          borderRadius: 3,
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          bgcolor: "grey.100",
+          py: 2,
+          px: 4,
+          borderTop: 1,
+          borderColor: "grey.200",
         }}
       >
-        <Box sx={{ textAlign: "center", mb: 3 }}>
-          <School sx={{ fontSize: 48, color: "primary.main", mb: 1 }} />
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{ fontWeight: "bold" }}
-          >
-            SELU AI Advisor
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Sign in to your account
-          </Typography>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            fullWidth
-            label="Email Address"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            error={!!formErrors.email}
-            helperText={formErrors.email}
-            margin="normal"
-            required
-            autoComplete="email"
-            autoFocus
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            value={formData.password}
-            onChange={handleChange}
-            error={!!formErrors.password}
-            helperText={formErrors.password}
-            margin="normal"
-            required
-            autoComplete="current-password"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={togglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={isSubmitting || isLoading}
-            sx={{ mt: 3, mb: 2, py: 1.5 }}
-          >
-            {isSubmitting || isLoading ? (
-              <CircularProgress size={24} />
-            ) : (
-              "Sign In"
-            )}
-          </Button>
-
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="body2">
-              Don't have an account?{" "}
-              <Link component={RouterLink} to="/register" variant="body2">
-                Sign up here
-              </Link>
+        <Box
+          sx={{
+            maxWidth: "1200px",
+            mx: "auto",
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              © 2024 Southeastern Louisiana University
             </Typography>
           </Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: 3,
+            }}
+          >
+            {[
+              "Privacy Policy",
+              "Terms of Service",
+              "FERPA Information",
+              "Contact Support",
+            ].map((link) => (
+              <Typography
+                key={link}
+                variant="body2"
+                component="button"
+                onClick={() => console.log(`Navigate to ${link}`)}
+                sx={{
+                  color: "text.secondary",
+                  textDecoration: "none",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  "&:hover": {
+                    color: "primary.main",
+                    textDecoration: "underline",
+                  },
+                }}
+              >
+                {link}
+              </Typography>
+            ))}
+          </Box>
         </Box>
-      </Paper>
-    </Box>
+      </Box>
+    </AuthLayout>
   );
-}
+};
 
 export default Login;
