@@ -1,5 +1,5 @@
 # fastapi 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from typing import Annotated
 from datetime import timedelta
 
@@ -11,7 +11,8 @@ from app.schemas.user import User, UserLogin, Token
 from app.core.dependencies import get_db
 from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from app.api.endpoints.user import functions as user_functions
-
+from app.core.otp import set_otp, verify_otp
+from app.models.user import User as UserModel
 
 auth_module = APIRouter()
 
@@ -50,3 +51,36 @@ async def refresh_access_token(refresh_token: str, db: Session = Depends(get_db)
 @auth_module.get('/users/me/', response_model= User)
 async def read_current_user( current_user: Annotated[User, Depends(user_functions.get_current_user)]):
     return current_user
+
+@auth_module.post("/verify-otp")
+async def verify_otp_endpoint(
+    email: str = Body(...),
+    code: str = Body(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(UserModel).filter_by(email=email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    if user.is_active:
+        # Optional: skip verification and allow login
+        return {"detail": "User already verified", "login": True}
+
+    if not verify_otp(email, code):
+        raise HTTPException(400, "Invalid or expired OTP")
+
+    user.is_active = True
+    db.commit()
+    return {"detail": "OTP verified and account activated", "login": True}
+
+@auth_module.post("/send-otp")
+@auth_module.post("/resend-otp")
+async def send_or_resend_otp(email: str = Body(..., embed=True)):
+    try:
+        set_otp(email)
+        return {"detail": "OTP sent"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send OTP: {str(e)}"
+        )

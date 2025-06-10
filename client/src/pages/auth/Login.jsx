@@ -115,59 +115,67 @@ const Login = () => {
   };
 
   const handleVerificationSubmit = async (code) => {
-    try {
-      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
+  try {
+    setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Call your verification endpoint
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: emailData.email,
-            code,
-            rememberDevice: emailData.rememberDevice,
-          }),
-        }
-      );
+    const response = await fetch(
+      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailData.email,
+          code,
+          rememberDevice: emailData.rememberDevice,
+        }),
+      }
+    );
 
-      if (response.ok) {
-        // Backend should now issue an HttpOnly, SameSite cookie upon successful OTP verification.
-        // Tokens are no longer stored in localStorage.
+    if (response.ok) {
+      // Proceed to login as usual after verification
+      const result = await login(emailData.email, code);
 
-        // The login function from AuthContext is called to update client-side auth state.
-        // This function should now rely on the HttpOnly cookie.
-        // Review AuthContext.login to ensure its parameters (email, code) are still
-        // appropriate or if it can be simplified for a cookie-based session.
-        const result = await login(emailData.email, code);
-
-        if (result.success) {
-          setVerificationData((prev) => ({ ...prev, loading: false })); // Reset loading before navigation
+      if (result.success) {
+        setVerificationData((prev) => ({ ...prev, loading: false }));
+        const from = location.state?.from?.pathname || "/";
+        navigate(from, { replace: true });
+      } else {
+        setVerificationData((prev) => ({
+          ...prev,
+          loading: false,
+          error: result.error || "Login failed after OTP verification.",
+        }));
+      }
+    } else {
+      const errorData = await response.json();
+      if (errorData.detail === "User already verified") {
+        // Try login directly
+        const fallback = await login(emailData.email, code);
+        if (fallback.success) {
+          setVerificationData((prev) => ({ ...prev, loading: false }));
           const from = location.state?.from?.pathname || "/";
           navigate(from, { replace: true });
         } else {
-          // Handle failure from AuthContext.login (e.g., if user fetch failed or login was unsuccessful)
           setVerificationData((prev) => ({
             ...prev,
             loading: false,
-            error: result.error || "Login failed after OTP verification.",
+            error: fallback.error || "User already verified, but login failed.",
           }));
         }
       } else {
-        const errorData = await response.json();
-        // This error will be caught by the catch block below, which sets loading to false.
         throw new Error(errorData.detail || "Invalid verification code");
       }
-    } catch (err) {
-      console.error("Verification error:", err);
-      setVerificationData((prev) => ({
-        ...prev,
-        loading: false,
-        error: err.message,
-      }));
     }
+  } catch (err) {
+    console.error("Verification error:", err);
+    setVerificationData((prev) => ({
+      ...prev,
+      loading: false,
+      error: err.message,
+    }));
+  }
   };
+
 
   const handleResendCode = async () => {
     try {

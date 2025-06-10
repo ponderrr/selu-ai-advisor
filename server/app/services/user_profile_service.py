@@ -2,7 +2,7 @@
 from pathlib import Path
 from uuid import uuid4
 from sqlalchemy.orm import Session, joinedload
-
+from app.models.user_profile import UserProfile
 from app.models.user import User
 from app.models.user_profile import UserProfile
 from app.models.academic_info import AcademicInfo
@@ -121,4 +121,31 @@ def save_avatar(
     user_profile.profile_picture_url = f"/static/avatars/{avatar_name}"
     db.add(user_profile)
     db.commit()
+    return build_profile(db, user_id)
+
+
+def remove_avatar(db: Session, user_id: int) -> UserProfileDetailedResponse:
+    """Remove user's avatar and return updated profile"""
+    profile = db.query(UserProfile).filter_by(user_id=user_id).first()
+    if not profile:
+        raise ValueError("Profile not found")
+
+    # Delete the physical file if it exists
+    if profile.profile_picture_url:
+        try:
+            # Extract filename from URL (e.g., "/static/avatars/filename.jpg" -> "filename.jpg")
+            if profile.profile_picture_url.startswith("/static/avatars/"):
+                filename = profile.profile_picture_url.replace("/static/avatars/", "")
+                avatar_file = MEDIA_ROOT / filename
+                if avatar_file.exists():
+                    avatar_file.unlink()
+        except Exception as e:
+            print(f"Warning: failed to delete avatar file: {e}")
+        
+        # Clear the avatar URL from database
+        profile.profile_picture_url = None
+        db.add(profile)
+        db.commit()
+
+    # Return the updated profile
     return build_profile(db, user_id)
