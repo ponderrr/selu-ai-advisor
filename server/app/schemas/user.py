@@ -13,7 +13,8 @@ class UserCreate(UserBase):
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-
+    degree_program: Optional[str] = None  
+    academic_year: Optional[str] = None   
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -22,6 +23,8 @@ class UserLogin(BaseModel):
 class User(UserBase):
     first_name: Optional[str]
     last_name: Optional[str]
+    degree_program: Optional[str]  
+    academic_year: Optional[str]   
     role: UserRole = UserRole.STUDENT
 
     class Config:
@@ -30,13 +33,11 @@ class User(UserBase):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    degree_program: Optional[str] = None  
+    academic_year: Optional[str] = None   
     role: Optional[UserRole] = None
 
 class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
-
-
-
-

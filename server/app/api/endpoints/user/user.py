@@ -44,6 +44,8 @@ def create_new_user(payload: UserCreate, db: Session = Depends(get_db)):
         password=get_password_hash(payload.password),
         first_name=payload.first_name,
         last_name=payload.last_name,
+        degree_program=payload.degree_program,  
+        academic_year=payload.academic_year,    
         is_active=False,
     )
     db.add(user)

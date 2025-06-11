@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import {
-  AuthLayout,
-  SignUpForm,
-  EmailVerificationForm,
-} from "../../components/auth";
+import { authService } from "../../services/api/auth";
+import AuthLayout from "../../components/auth/AuthLayout";
+import SignUpForm from "../../components/auth/SignUpForm";
+import EmailVerificationForm from "../../components/auth/EmailVerificationForm";
 
 const Register = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { register, isAuthenticated, isLoading, error, clearError } = useAuth();
-
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState("signup");
+  const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [registrationData, setRegistrationData] = useState(null);
   const [verificationData, setVerificationData] = useState({
     loading: false,
@@ -24,48 +23,29 @@ const Register = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true });
+      navigate("/dashboard");
     }
   }, [isAuthenticated, navigate]);
 
-  // Clear errors when component mounts
-  useEffect(() => {
-    clearError();
-  }, [clearError]);
+  const clearError = () => setError(null);
 
-  // Handle countdown timer for resend
-  useEffect(() => {
-    let timer;
-    if (verificationData.resendCooldown > 0) {
-      timer = setInterval(() => {
-        setVerificationData((prev) => ({
-          ...prev,
-          resendCooldown: prev.resendCooldown - 1,
-        }));
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [verificationData.resendCooldown]);
-
-  const generateWNumber = () => {
-    const randomDigits = Math.floor(Math.random() * 9999999)
-      .toString()
-      .padStart(7, "0");
-    return `W${randomDigits}`;
-  };
-
+  // ✅ CORRECTED: Use user-provided W-number, don't generate
   const handleRegistrationSubmit = async (formData) => {
     try {
+      setLoading(true);
+      clearError();
+
+      // Prepare registration payload with user's W-number (if provided)
       const registrationPayload = {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        wNumber: formData.studentId || generateWNumber(),
+        wNumber: formData.studentId?.trim().toUpperCase() || null, // ✅ Use user input or null
         academic: {
           status: formData.status,
           expectedGraduation: formData.expectedGraduation,
           classStanding: formData.classStanding,
-          major: "Computer Science", // Default for now
+          major: formData.major || "Computer Science",
         },
         preferredName: formData.preferredName,
         agreements: {
@@ -75,95 +55,87 @@ const Register = () => {
         },
       };
 
+      // Store registration data for verification step
       setRegistrationData(registrationPayload);
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(registrationPayload),
-        }
-      );
+      // Use the proper registration endpoint that triggers OTP
+      const response = await authService.register(registrationPayload);
 
-      if (response.ok) {
-        setCurrentStep("verification");
-        setVerificationData((prev) => ({
-          ...prev,
-          loading: false,
-          error: null,
-          resendCooldown: 120,
-        }));
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Registration failed");
-      }
-    } catch (err) {
-      console.error("Registration error:", err);
+      console.log("Registration initiated:", response);
+
+      // Move to verification step
+      setCurrentStep("verification");
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleVerificationSubmit = async (code) => {
+  // Handle OTP verification
+  const handleVerificationSubmit = async ({ code }) => {
     try {
       setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-registration`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: registrationData.email,
-            code,
-          }),
-        }
+      // Verify the OTP code
+      const response = await authService.verifyRegistration(
+        registrationData.email,
+        code
       );
 
-      if (response.ok) {
-        const data = await response.json(); // Optional: handle `data` if needed
-        const result = await register(registrationData);
-        if (result.success) {
-          navigate("/", { replace: true });
-        }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Invalid verification code");
-      }
-    } catch (err) {
-      console.error("Verification error:", err);
+      console.log("Verification successful:", response);
+
+      // Redirect to login with success message
+      navigate("/login", {
+        state: {
+          message:
+            "Registration successful! Please login with your credentials.",
+          email: registrationData.email,
+        },
+      });
+    } catch (error) {
+      console.error("Verification error:", error);
       setVerificationData((prev) => ({
         ...prev,
         loading: false,
-        error: err.message,
+        error: error.message,
       }));
     }
   };
 
+  // Handle OTP resend
   const handleResendCode = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/resend-registration-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: registrationData.email }),
-        }
-      );
+      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      if (response.ok) {
-        setVerificationData((prev) => ({
-          ...prev,
-          resendCooldown: 120,
-          error: null,
-        }));
-      } else {
-        throw new Error("Failed to resend code");
-      }
-    } catch (err) {
-      console.error("Resend error:", err);
+      await authService.resendRegistrationOTP(registrationData.email);
+
+      console.log("OTP resent successfully");
+
+      // Start cooldown timer
       setVerificationData((prev) => ({
         ...prev,
-        error: "Failed to resend code. Please try again.",
+        loading: false,
+        resendCooldown: 60,
+      }));
+
+      // Countdown timer
+      const countdown = setInterval(() => {
+        setVerificationData((prev) => {
+          if (prev.resendCooldown <= 1) {
+            clearInterval(countdown);
+            return { ...prev, resendCooldown: 0 };
+          }
+          return { ...prev, resendCooldown: prev.resendCooldown - 1 };
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      setVerificationData((prev) => ({
+        ...prev,
+        loading: false,
+        error: error.message,
       }));
     }
   };
@@ -202,6 +174,7 @@ const Register = () => {
           loading={verificationData.loading}
           error={verificationData.error}
           resendCooldown={verificationData.resendCooldown}
+          isRegistration={true}
         />
       )}
 
