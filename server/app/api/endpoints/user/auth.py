@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from typing import Annotated
 from datetime import timedelta
@@ -93,9 +92,9 @@ async def verify_otp_endpoint(
 
 @auth_module.post("/send-otp")
 @auth_module.post("/resend-otp")
-async def send_or_resend_otp(email: str = Body(..., embed=True)):
+async def send_or_resend_otp(request: SendOTPRequest = Body(...)):
     try:
-        set_otp(email)
+        set_otp(request.email)
         return {"detail": "OTP sent"}
     except Exception as e:
         raise HTTPException(

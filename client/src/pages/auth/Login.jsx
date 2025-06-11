@@ -126,7 +126,7 @@ const Login = () => {
           setVerificationData((prev) => ({
             ...prev,
             loading: false,
-            error: fallback.error || "User already verified, but login failed.",
+            error: result.error || "User already verified, but login failed.",
           }));
         }
       } else {
