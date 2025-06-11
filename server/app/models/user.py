@@ -1,4 +1,3 @@
-# app/models/user.py   ← keep this single copy
 from enum import Enum as PyEnum
 from sqlalchemy import (
     Boolean, Column, Integer, String, Enum, DateTime, ForeignKey, text
@@ -13,6 +12,14 @@ class UserRole(PyEnum):
     ADVISOR = "advisor"
     ADMIN   = "admin"
 
+class AcademicYear(PyEnum):
+    FRESHMAN  = "freshman"
+    SOPHOMORE = "sophomore"
+    JUNIOR    = "junior"
+    SENIOR    = "senior"
+    GRADUATE  = "graduate"
+    OTHER     = "other"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -23,6 +30,7 @@ class User(Base):
     first_name = Column(String)
     last_name  = Column(String)
     role       = Column(Enum(UserRole), nullable=False, default=UserRole.STUDENT)
+    academic_year = Column(Enum(AcademicYear), nullable=True)
 
     # Relationships
     completed_courses     = relationship("StudentCourse", back_populates="student")
