@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
 from app.core.security import get_current_user, get_password_hash
-from app.models.user import User as UserModel, UserRole
+from app.models.user import User as UserModel, UserRole, AcademicYear
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.schemas.user_profile import UserProfileDetailedResponse
 from app.services.user_profile_service import build_profile
@@ -44,8 +44,11 @@ def create_new_user(payload: UserCreate, db: Session = Depends(get_db)):
         password=get_password_hash(payload.password),
         first_name=payload.first_name,
         last_name=payload.last_name,
-        degree_program=payload.degree_program,  
-        academic_year=payload.academic_year,    
+        current_degree_program_id=payload.current_degree_program_id,
+        academic_year=payload.academic_year,
+        preferred_name=payload.preferred_name,
+        secondary_email=payload.secondary_email,
+        expected_graduation_year=payload.expected_graduation_year,
         is_active=False,
     )
     db.add(user)
@@ -115,6 +118,10 @@ def update_user(
         )
         if w_taken:
             raise HTTPException(409, "W-number already in use")
+
+    if "secondary_email" in data and data["secondary_email"]:
+        if not data["secondary_email"].endswith("@selu.edu"):
+            raise HTTPException(400, "Only @selu.edu email addresses are allowed")
 
     for field, value in data.items():
         setattr(user, field, value)
