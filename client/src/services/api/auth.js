@@ -1,4 +1,7 @@
-import { validateWNumber, validateSeluEmail } from "../../utils/authValidation";
+import {
+  validateWNumber,
+  validateSeluEmail,
+} from "../validation/authValidation";
 import { validateRegistrationForm } from "../validation/authValidation";
 
 const API_BASE_URL =
