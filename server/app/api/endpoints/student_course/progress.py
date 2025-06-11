@@ -7,7 +7,8 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.student_course import StudentCourse
 from app.models.course import Course as CourseModel
-from app.schemas.progress import ProgressResponse, ProgressCreate, ProgressUpdate
+from app.schemas.progress import ProgressResponse, ProgressCreate, ProgressUpdate, ProgressDetailedResponse
+from app.services.progress_service import get_detailed_progress_for_student
 
 progress_module = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -80,3 +81,8 @@ def remove_course_progress(
         raise HTTPException(status_code=404, detail="Course not found in your progress")
     db.delete(record)
     db.commit()
+
+
+@progress_module.get("/detailed", response_model=ProgressDetailedResponse)
+def get_detailed_progress(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return get_detailed_progress_for_student(current_user, db)

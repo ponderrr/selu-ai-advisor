@@ -1,7 +1,7 @@
 # app/schemas/progress.py
 from pydantic import BaseModel
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 class ProgressBase(BaseModel):
     course_id: int
@@ -34,3 +34,26 @@ class ProgressOut(ProgressBase):
 
     class Config:
         orm_mode = True
+
+class CourseInfo(BaseModel):
+    id: int
+    name: str
+    credits: float
+    grade: Optional[str]
+    completed: bool
+
+class CategoryBreakdown(BaseModel):
+    name: str
+    required_credits: float
+    completed_credits: float
+    courses: List[CourseInfo]
+    gpa: Optional[float]
+
+class ProgressDetailedResponse(BaseModel):
+    w_number: str
+    student_name: str
+    overall_gpa: Optional[float]
+    total_required: float
+    completed_hours: float
+    progress_percentage: float
+    categories: List[CategoryBreakdown]

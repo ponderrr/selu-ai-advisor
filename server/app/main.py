@@ -1,8 +1,9 @@
 # fastapi
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from app.core.modules import init_routers, make_middleware, router
 import logging 
-
+import os
 
 from app.core.config import settings 
 from fastapi_limiter import FastAPILimiter
@@ -17,6 +18,13 @@ def create_app() -> FastAPI:
         version="1.0.0",
         middleware=make_middleware(),
     )
+    
+    # Create static directory if it doesn't exist
+    os.makedirs("static", exist_ok=True)
+    
+    # Mount static files
+    app_.mount("/api/placeholder", StaticFiles(directory="static"), name="placeholder")
+    
     init_routers(app_=app_)
     return app_
 

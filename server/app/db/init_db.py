@@ -343,23 +343,25 @@ async def init_db(db: Session) -> None:
     student_courses_to_create = [
         # Fall 2023
         {"course": cmps161_db, "grade": "A",  "semester": "Fall",   "year": 2023},
-        {"course": engl101_db, "grade": "B+", "semester": "Fall",   "year": 2023},
+        {"course": engl101_db, "grade": "B",  "semester": "Fall",   "year": 2023},
         {"course": math163_db, "grade": "C",  "semester": "Fall",   "year": 2023},
 
         # Spring 2024
         {"course": cmps280_db, "grade": "B",  "semester": "Spring", "year": 2024},
-        {"course": hist101_db, "grade": "A-", "semester": "Spring", "year": 2024},
+        {"course": hist101_db, "grade": "A",  "semester": "Spring", "year": 2024},
         {"course": math200_db, "grade": "D",  "semester": "Spring", "year": 2024},
 
+        # Summer 2024
+        {"course": cmps390_db, "grade": "A",  "semester": "Summer", "year": 2024},
+        {"course": arts101_db, "grade": "P",  "semester": "Summer", "year": 2024},
+
         # Fall 2024
-        {"course": cmps390_db, "grade": "A",  "semester": "Fall",   "year": 2024},
-        {"course": arts101_db, "grade": "P",  "semester": "Fall",   "year": 2024},
-        {"course": cmps411_db, "grade": "C+", "semester": "Fall",   "year": 2024},
+        {"course": cmps411_db, "grade": "C",  "semester": "Fall",   "year": 2024},
+        {"course": cmps401_db, "grade": "B",  "semester": "Fall",   "year": 2024},
+        {"course": cmps431_db, "grade": "A",  "semester": "Fall",   "year": 2024},
 
         # Spring 2025 (in-progress)
-        {"course": cmps401_db, "grade": None, "semester": "Spring", "year": 2025},
-        {"course": cmps431_db, "grade": None, "semester": "Spring", "year": 2025},
-        {"course": cmps415_db, "grade": "F",  "semester": "Spring", "year": 2025},
+        {"course": cmps415_db, "grade": None, "semester": "Spring", "year": 2025},
     ]
 
     for sc in student_courses_to_create:
@@ -370,6 +372,9 @@ async def init_db(db: Session) -> None:
                 "(missing course object)"
             )
             continue
+
+        # Set completed=True if grade is not None, else False
+        completed = sc["grade"] is not None
 
         existing_sc = (
             db.query(StudentCourse)
@@ -388,6 +393,7 @@ async def init_db(db: Session) -> None:
                 grade=sc["grade"],
                 semester=sc["semester"],
                 year=sc["year"],
+                completed=completed,
             )
             db.add(new_sc)
             db.commit()
@@ -397,35 +403,17 @@ async def init_db(db: Session) -> None:
                 f"{sc['course'].course_code} ({sc['semester']} {sc['year']})"
             )
 
-
-    # ── 8. Create Sample Chat Messages (optional) ──────────────────────────────
-
-    # Generate a random session_id for this example
-    chat_session_id = uuid4()
-
-    # Only add chat messages if none exist for this session
-    if not db.query(ChatMessage).filter_by(session_id=chat_session_id).first():
-        sample_chat_messages = [
-            ChatMessage(
-                user_id=student_user.id,
-                session_id=chat_session_id,
-                role="user",
-                content="Hi, can you tell me about the Computer Science major requirements?"
-            ),
-            ChatMessage(
-                user_id=student_user.id,
-                session_id=chat_session_id,
-                role="ai",
-                content=(
-                    "Certainly! The B.S. in Computer Science at SELU "
-                    "typically requires 120 credit hours. Key areas include "
-                    "core CS courses, math, natural sciences, and general electives. "
-                    "What specifically would you like to know?"
-                )
-            ),
-        ]
-        db.add_all(sample_chat_messages)
-        db.commit()
-        print(f"Created sample chat messages for user: {student_user.email}")
-
     print("--- Database Initialization Complete ---")
+
+    # Update all existing StudentCourse rows for the student to set completed correctly
+    all_sc = db.query(StudentCourse).filter_by(user_id=student_user.id).all()
+    for sc in all_sc:
+        sc.completed = sc.grade is not None
+        db.add(sc)
+    db.commit()
+    print("[DEBUG] Updated completed field for all StudentCourse rows for the student.")
+    # Print all for verification
+    all_sc = db.query(StudentCourse).filter_by(user_id=student_user.id).all()
+    print(f"[DEBUG] All StudentCourse rows for {student_user.email} after update:")
+    for sc in all_sc:
+        print(f"[DEBUG] id={sc.id}, course_id={sc.course_id}, grade={sc.grade}, completed={sc.completed}, semester={sc.semester}, year={sc.year}")
