@@ -68,36 +68,3 @@ async def read_current_user(
     current_user: Annotated[UserModel, Depends(user_functions.get_current_user)]
 ) -> UserModel:
     return current_user
-
-@auth_module.post("verify-otp")
-async def verify_otp_endpoint(
-    email: str = Body(...),
-    code: str = Body(...),
-    db: Session = Depends(get_db),
-):
-    user = db.query(UserModel).filter_by(email=email).first()
-    if not user:
-        raise HTTPException(404, "User not found")
-
-    if user.is_active:
-        # Optional: skip verification and allow login
-        return {"detail": "User already verified", "login": True}
-
-    if not verify_otp(email, code):
-        raise HTTPException(400, "Invalid or expired OTP")
-
-    user.is_active = True
-    db.commit()
-    return {"detail": "OTP verified and account activated", "login": True}
-
-@auth_module.post("send-otp")
-@auth_module.post("resend-otp")
-async def send_or_resend_otp(request: SendOTPRequest = Body(...)):
-    try:
-        set_otp(request.email)
-        return {"detail": "OTP sent"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send OTP: {str(e)}"
-        )

@@ -18,12 +18,13 @@ import { validateEmail } from "../../services/validation/authValidation";
 
 const SignInForm = ({
   onSwitchToSignUp,
-  onEmailSubmit,
+  onLoginSubmit,
   loading = false,
   error = null,
 }) => {
   const [formData, setFormData] = useState({
     email: "",
+    password: "",
     rememberDevice: false,
   });
   const [formErrors, setFormErrors] = useState({});
@@ -48,14 +49,18 @@ const SignInForm = ({
       errors.email = "Please use your SELU email address (@selu.edu)";
     }
 
+    if (!formData.password) {
+      errors.password = "Password is required";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm() && onEmailSubmit) {
-      onEmailSubmit(formData);
+    if (validateForm() && onLoginSubmit) {
+      onLoginSubmit(formData);
     }
   };
 
@@ -115,6 +120,26 @@ const SignInForm = ({
             startAdornment: (
               <InputAdornment position="start">
                 <Email color="action" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 3 }}
+        />
+
+        <TextField
+          fullWidth
+          label="Password"
+          type="password"
+          value={formData.password}
+          onChange={(e) => handleChange("password", e.target.value)}
+          error={!!formErrors.password}
+          helperText={formErrors.password}
+          placeholder="Your password"
+          margin="normal"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Lock color="action" />
               </InputAdornment>
             ),
           }}
