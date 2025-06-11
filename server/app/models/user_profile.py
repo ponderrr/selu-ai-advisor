@@ -35,6 +35,5 @@ class UserProfile(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     user = relationship("User", back_populates="user_profile")
-
     def __repr__(self):
         return f"<UserProfile for User ID: {self.user_id}>"

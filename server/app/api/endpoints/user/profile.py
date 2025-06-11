@@ -6,7 +6,7 @@ from app.schemas.user_profile import UserProfileDetailedResponse, ContactBlock, 
 from app.services.user_profile_service import build_profile, update_blocks, save_avatar
 from app.models.user import User as UserModel
 from pathlib import Path
-
+from app.services.user_profile_service import remove_avatar as remove_avatar_service
 
 profile_router = APIRouter(prefix="/users/me", tags=["profile"])
 
@@ -49,3 +49,14 @@ async def upload_avatar(
     content = await file.read()  # async read from UploadFile
     profile = save_avatar(db, current_user.id, content, ext)
     return profile
+
+@profile_router.delete("/avatar", response_model=UserProfileDetailedResponse)
+def remove_avatar(
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        profile = remove_avatar_service(db, current_user.id)
+        return profile
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
