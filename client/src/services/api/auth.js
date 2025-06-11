@@ -4,13 +4,12 @@ import {
 } from "../validation/authValidation";
 import { validateRegistrationForm } from "../validation/authValidation";
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+// Removed API_BASE_URL as proxy handles routing.
 
 export const authService = {
   async login(email, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,7 +55,7 @@ export const authService = {
       }
 
       // Use proper registration endpoint with OTP
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +101,7 @@ export const authService = {
   // OTP verification method
   async verifyRegistration(email, otpCode) {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-registration`, {
+      const response = await fetch(`/auth/verify-registration`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -132,18 +131,15 @@ export const authService = {
   // Resend OTP method
   async resendRegistrationOTP(email) {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/resend-registration-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email,
-          }),
-        }
-      );
+      const response = await fetch(`/auth/resend-registration-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response
@@ -170,7 +166,7 @@ export const authService = {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/users/me`, {
+      const response = await fetch(`/auth/users/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -204,7 +200,7 @@ export const authService = {
         throw new Error("No refresh token available");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`/auth/refresh`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -235,7 +231,7 @@ export const authService = {
 
   async verifyToken(token) {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/users/me`, {
+      const response = await fetch(`/auth/users/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

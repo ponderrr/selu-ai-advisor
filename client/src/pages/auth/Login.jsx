@@ -70,17 +70,14 @@ const Login = () => {
     try {
       setEmailData(formData);
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/send-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-            rememberDevice: formData.rememberDevice,
-          }),
-        }
-      );
+      const response = await fetch(`/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          rememberDevice: formData.rememberDevice,
+        }),
+      });
 
       if (response.ok) {
         setCurrentStep("verification");
@@ -103,18 +100,15 @@ const Login = () => {
     try {
       setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: emailData.email,
-            code,
-            rememberDevice: emailData.rememberDevice,
-          }),
-        }
-      );
+      const response = await fetch(`/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailData.email,
+          code,
+          rememberDevice: emailData.rememberDevice,
+        }),
+      });
 
       if (response.ok) {
         const result = await login(emailData.email, code);
@@ -145,14 +139,11 @@ const Login = () => {
 
   const handleResendCode = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/resend-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailData.email }),
-        }
-      );
+      const response = await fetch(`/auth/resend-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailData.email }),
+      });
 
       if (response.ok) {
         setVerificationData((prev) => ({

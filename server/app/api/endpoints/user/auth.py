@@ -35,7 +35,7 @@ def _generate_otp_code(length: int = 6) -> str:
     return "".join(random.choice(string.digits) for _ in range(length))
 
 
-@auth_module.post("/login", response_model=Token)
+@auth_module.post("login", response_model=Token)
 async def login_for_access_token(user: UserLogin, db: Session = Depends(get_db)) -> Token:
     member = user_functions.authenticate_user(db, user=user)
     if not member:
@@ -57,19 +57,19 @@ async def login_for_access_token(user: UserLogin, db: Session = Depends(get_db))
     return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 
-@auth_module.post("/refresh", response_model=Token)
+@auth_module.post("refresh", response_model=Token)
 async def refresh_access_token(refresh_token: str, db: Session = Depends(get_db)) -> Token:
     token = await user_functions.refresh_access_token(db, refresh_token)
     return token
 
 
-@auth_module.get("/users/me/", response_model=User)
+@auth_module.get("users/me/", response_model=User)
 async def read_current_user(
     current_user: Annotated[UserModel, Depends(user_functions.get_current_user)]
 ) -> UserModel:
     return current_user
 
-@auth_module.post("/verify-otp")
+@auth_module.post("verify-otp")
 async def verify_otp_endpoint(
     email: str = Body(...),
     code: str = Body(...),
@@ -90,8 +90,8 @@ async def verify_otp_endpoint(
     db.commit()
     return {"detail": "OTP verified and account activated", "login": True}
 
-@auth_module.post("/send-otp")
-@auth_module.post("/resend-otp")
+@auth_module.post("send-otp")
+@auth_module.post("resend-otp")
 async def send_or_resend_otp(request: SendOTPRequest = Body(...)):
     try:
         set_otp(request.email)
