@@ -1,26 +1,38 @@
-from fastapi.security import OAuth2
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
-from fastapi.openapi.models import OAuthFlowPassword
-from fastapi.openapi.models import SecuritySchemeType
-from fastapi.openapi.models import OAuth2 as OAuth2Model
-from app.core.database import SessionLocal
-from fastapi.security import APIKeyHeader
+from fastapi import Depends, HTTPException, status
+from typing import Annotated
+from sqlalchemy.orm import Session
+from jose import JWTError, jwt
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 
-# authorization
-class BearerTokenOnly(OAuth2):
-    def __init__(self, tokenUrl: str):
-        flows = OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl=tokenUrl))
-        super().__init__(flows=flows, scheme_name="OAuth2PasswordBearer")
+from app.core.database import get_db
+from app.core.settings import SECRET_KEY, ALGORITHM
+from app.models.user import User as UserModel
 
-oauth2_scheme = APIKeyHeader(name="Authorization")
+security = HTTPBearer()
+oauth2_scheme = security  # Alias for backward compatibility
 
-# db connection
-def get_db():
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
+def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    db: Annotated[Session, Depends(get_db)]
+) -> UserModel:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authentication credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("email")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(UserModel).filter(UserModel.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
  
 
 

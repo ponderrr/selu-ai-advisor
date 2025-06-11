@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from app.schemas.user import User, UserLogin, Token
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, get_current_user
 from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from app.api.endpoints.user import functions as user_functions
 from app.models.user import User as UserModel
 from app.models.user_session import UserSession
 from app.schemas.session import SessionInfo, SessionList
+from app.schemas.degree_program import DegreeProgramBase
 
 auth_module = APIRouter()
 
@@ -24,13 +25,6 @@ async def login_for_access_token(user: UserLogin, request: Request, db: Session 
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not db_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account is not active. Please verify your email first.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     access_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = user_functions.create_access_token(
         data={"id": db_user.id, "email": db_user.email, "role": db_user.role.value},
@@ -74,21 +68,31 @@ async def refresh_access_token(refresh_token: str, request: Request, db: Session
     
     return Token(**token_data)
 
-@auth_module.get("/me", response_model=User)
-async def read_current_user(
-    current_user: Annotated[UserModel, Depends(user_functions.get_current_user)]
-) -> UserModel:
-    return current_user
+@auth_module.get("/me")
+async def read_current_user_me(
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+):
+    return {"status": "ok", "user_id": current_user.id}
 
 @auth_module.get("/users/me", response_model=User)
 async def read_current_user(
-    current_user: Annotated[UserModel, Depends(user_functions.get_current_user)]
-) -> UserModel:
-    return current_user
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+) -> dict:
+    degree_program = None
+    if current_user.current_degree_program:
+        degree_program = DegreeProgramBase(
+            name=current_user.current_degree_program.name,
+            concentration=current_user.current_degree_program.concentration,
+            catalog_year=current_user.current_degree_program.catalog_year,
+            total_hours=current_user.current_degree_program.total_hours
+        )
+    user_dict = current_user.__dict__.copy()
+    user_dict["degree_program"] = degree_program
+    return user_dict
 
 @auth_module.get("/sessions", response_model=SessionList)
 async def get_active_sessions(
-    current_user: Annotated[UserModel, Depends(user_functions.get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> SessionList:
     sessions = db.query(UserSession).filter(
@@ -109,7 +113,7 @@ async def get_active_sessions(
 @auth_module.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
     session_id: int,
-    current_user: Annotated[UserModel, Depends(user_functions.get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ):
     session = db.query(UserSession).filter(
@@ -128,7 +132,7 @@ async def delete_session(
 
 @auth_module.delete("/sessions/all", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions(
-    current_user: Annotated[UserModel, Depends(user_functions.get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ):
     db.query(UserSession).filter(

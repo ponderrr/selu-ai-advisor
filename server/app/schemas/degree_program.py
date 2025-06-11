@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime
 
 class DegreeProgramBase(BaseModel):
@@ -24,3 +24,14 @@ class DegreeProgramUpdate(BaseModel):
     concentration: Optional[str] = None
     catalog_year: Optional[int] = None
     total_hours: Optional[int] = None
+
+class ProgramRequirements(BaseModel):
+    name: str
+    concentration: Optional[str]
+    catalog_year: int
+    total_hours: int
+    category_requirements: Dict[str, float]
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
