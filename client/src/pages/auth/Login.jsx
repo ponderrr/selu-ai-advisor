@@ -2,18 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
-import {
-  AuthLayout,
-  SignInForm,
-  EmailVerificationForm,
-} from "../../components/auth";
+import { AuthLayout, SignInForm } from "../../components/auth";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const intervalIdRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("signin");
   const [emailData, setEmailData] = useState({
     email: "",
@@ -30,36 +25,6 @@ const Login = () => {
   useEffect(() => {
     clearError();
   }, [clearError]);
-
-  useEffect(() => {
-    intervalIdRef.current = setInterval(() => {
-      setVerificationData((prevData) => {
-        if (prevData.resendCooldown > 0) {
-          const newCooldown = prevData.resendCooldown - 1;
-          if (newCooldown === 0) {
-            if (intervalIdRef.current) {
-              clearInterval(intervalIdRef.current);
-              intervalIdRef.current = null;
-            }
-          }
-          return { ...prevData, resendCooldown: newCooldown };
-        } else {
-          if (intervalIdRef.current) {
-            clearInterval(intervalIdRef.current);
-            intervalIdRef.current = null;
-          }
-          return prevData;
-        }
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
-    };
-  }, []);
 
   const handleLoginSubmit = async (formData) => {
     try {
