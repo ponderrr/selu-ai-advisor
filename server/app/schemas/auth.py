@@ -4,16 +4,6 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
-# Removed SendOTPRequest as it's no longer used for login OTP
-# class SendOTPRequest(BaseModel):
-#     email: EmailStr
-
-
-# Removed SendOTPResponse as it's no longer used for login OTP
-# class SendOTPResponse(BaseModel):
-#     msg: str
-
-
 class AcademicInfo(BaseModel):
     status: Optional[str] = None
     expectedGraduation: Optional[str] = None

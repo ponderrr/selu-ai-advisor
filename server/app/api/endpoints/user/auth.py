@@ -6,18 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-import random, string
 
 from app.schemas.user import User, UserLogin, Token
 from app.schemas.auth import (
-    SendOTPRequest,
-    SendOTPResponse,
     RegisterRequest,
     RegisterResponse,
     VerifyRegistrationRequest,
     VerifyRegistrationResponse,
-    ResendRegistrationOTPRequest,
-    ResendRegistrationOTPResponse,
 )
 from app.core.dependencies import get_db
 from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
@@ -26,13 +21,6 @@ from app.core.otp import set_otp, verify_otp
 from app.models.user import User as UserModel
 
 auth_module = APIRouter(prefix="/auth")
-
-_otp_store: dict[str, dict] = {}
-_registration_store: dict[str, dict] = {}
-
-
-def _generate_otp_code(length: int = 6) -> str:
-    return "".join(random.choice(string.digits) for _ in range(length))
 
 
 @auth_module.post("login", response_model=Token)
