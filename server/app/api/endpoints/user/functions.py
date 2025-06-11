@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Depends
 from typing import Annotated
 from datetime import datetime, timedelta, timezone
-
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 # from auth import models, schemas
@@ -16,6 +16,14 @@ from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.dependencies import get_db, oauth2_scheme
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    """Hash a password using bcrypt"""
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    return pwd_context.verify(plain_password, hashed_password)
 
 # get user by email 
 def get_user_by_email(db: Session, email: str):

@@ -2,10 +2,9 @@ import random
 import string
 import time
 
-# Stores OTPs as: {email: (otp, expiry_timestamp)}
 otp_store = {}
 
-OTP_EXPIRATION_SECONDS = 300  # 5 minutes
+OTP_EXPIRATION_SECONDS = 300
 
 def generate_otp(length=6):
     return ''.join(random.choices(string.digits, k=length))
@@ -27,6 +26,5 @@ def verify_otp(email: str, submitted_otp: str) -> bool:
         return False
     if submitted_otp != otp:
         return False
-    # OTP is valid, delete it after use
     del otp_store[email]
     return True

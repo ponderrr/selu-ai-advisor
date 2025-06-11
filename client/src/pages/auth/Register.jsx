@@ -13,7 +13,7 @@ const Register = () => {
   const location = useLocation();
   const { register, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const [currentStep, setCurrentStep] = useState("signup"); // "signup" | "verification"
+  const [currentStep, setCurrentStep] = useState("signup");
   const [registrationData, setRegistrationData] = useState(null);
   const [verificationData, setVerificationData] = useState({
     loading: false,
@@ -48,7 +48,6 @@ const Register = () => {
   }, [verificationData.resendCooldown]);
 
   const generateWNumber = () => {
-    // Generate a 7-digit W number (you might want to get this from backend)
     const randomDigits = Math.floor(Math.random() * 9999999)
       .toString()
       .padStart(7, "0");
@@ -58,24 +57,17 @@ const Register = () => {
   const handleRegistrationSubmit = async (formData) => {
     try {
       const registrationPayload = {
-        // User basic info
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
         wNumber: formData.studentId || generateWNumber(),
-
-        // Academic info
         academic: {
           status: formData.status,
           expectedGraduation: formData.expectedGraduation,
           classStanding: formData.classStanding,
           major: "Computer Science", // Default for now
         },
-
-        // Preferences
         preferredName: formData.preferredName,
-
-        // Agreements
         agreements: {
           termsOfService: formData.agreeTerms,
           codeOfConduct: formData.agreeCode,
@@ -85,7 +77,6 @@ const Register = () => {
 
       setRegistrationData(registrationPayload);
 
-      // Send registration request that triggers email verification
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/register`,
         {
@@ -96,13 +87,12 @@ const Register = () => {
       );
 
       if (response.ok) {
-        // Move to verification step
         setCurrentStep("verification");
         setVerificationData((prev) => ({
           ...prev,
           loading: false,
           error: null,
-          resendCooldown: 120, // 2 minutes
+          resendCooldown: 120,
         }));
       } else {
         const errorData = await response.json();
@@ -110,7 +100,6 @@ const Register = () => {
       }
     } catch (err) {
       console.error("Registration error:", err);
-      // Error will be handled by auth context
     }
   };
 
@@ -118,7 +107,6 @@ const Register = () => {
     try {
       setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Verify the email and complete registration
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-registration`,
         {
@@ -132,11 +120,8 @@ const Register = () => {
       );
 
       if (response.ok) {
-        const data = await response.json();
-
-        // Complete registration through auth context
+        const data = await response.json(); // Optional: handle `data` if needed
         const result = await register(registrationData);
-
         if (result.success) {
           navigate("/", { replace: true });
         }

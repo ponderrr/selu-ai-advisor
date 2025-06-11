@@ -13,9 +13,8 @@ const Login = () => {
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const intervalIdRef = useRef(null); // Keep track of the interval ID
-
-  const [currentStep, setCurrentStep] = useState("signin"); // "signin" | "verification"
+  const intervalIdRef = useRef(null);
+  const [currentStep, setCurrentStep] = useState("signin");
   const [emailData, setEmailData] = useState({
     email: "",
     rememberDevice: false,
@@ -26,7 +25,6 @@ const Login = () => {
     resendCooldown: 0,
   });
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const from = location.state?.from?.pathname || "/";
@@ -34,56 +32,44 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, location.state]);
 
-  // Clear errors when component mounts
   useEffect(() => {
     clearError();
   }, [clearError]);
 
-  // Handle countdown timer for resend
   useEffect(() => {
-    // This effect runs once on mount.
-    // It sets up an interval that will call setVerificationData.
-    // setVerificationData's callback will decide if the interval should continue.
-
     intervalIdRef.current = setInterval(() => {
       setVerificationData((prevData) => {
         if (prevData.resendCooldown > 0) {
           const newCooldown = prevData.resendCooldown - 1;
           if (newCooldown === 0) {
-            // Countdown finished. Clear the interval.
             if (intervalIdRef.current) {
               clearInterval(intervalIdRef.current);
-              intervalIdRef.current = null; // Mark as cleared
+              intervalIdRef.current = null;
             }
           }
           return { ...prevData, resendCooldown: newCooldown };
         } else {
-          // Cooldown is already 0 or less.
-          // If an interval is somehow still running, clear it.
           if (intervalIdRef.current) {
             clearInterval(intervalIdRef.current);
-            intervalIdRef.current = null; // Mark as cleared
+            intervalIdRef.current = null;
           }
-          return prevData; // No change to state
+          return prevData;
         }
       });
     }, 1000);
 
-    // Cleanup function for unmount
     return () => {
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
       }
     };
-  }, []); // Empty dependency array: runs on mount, cleans on unmount.
+  }, []);
 
   const handleEmailSubmit = async (formData) => {
     try {
       setEmailData(formData);
 
-      // For now, simulate sending OTP
-      // Replace with actual API call to send OTP
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/send-otp`,
         {
@@ -102,7 +88,7 @@ const Login = () => {
           ...prev,
           loading: false,
           error: null,
-          resendCooldown: 120, // 2 minutes
+          resendCooldown: 120,
         }));
       } else {
         const errorData = await response.json();
@@ -110,7 +96,6 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Email submission error:", err);
-      // Handle error through auth context or local state
     }
   };
 
@@ -118,40 +103,22 @@ const Login = () => {
   try {
     setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
-    const response = await fetch(
-      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: emailData.email,
-          code,
-          rememberDevice: emailData.rememberDevice,
-        }),
-      }
-    );
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: emailData.email,
+            code,
+            rememberDevice: emailData.rememberDevice,
+          }),
+        }
+      );
 
-    if (response.ok) {
-      // Proceed to login as usual after verification
-      const result = await login(emailData.email, code);
-
-      if (result.success) {
-        setVerificationData((prev) => ({ ...prev, loading: false }));
-        const from = location.state?.from?.pathname || "/";
-        navigate(from, { replace: true });
-      } else {
-        setVerificationData((prev) => ({
-          ...prev,
-          loading: false,
-          error: result.error || "Login failed after OTP verification.",
-        }));
-      }
-    } else {
-      const errorData = await response.json();
-      if (errorData.detail === "User already verified") {
-        // Try login directly
-        const fallback = await login(emailData.email, code);
-        if (fallback.success) {
+      if (response.ok) {
+        const result = await login(emailData.email, code);
+        if (result.success) {
           setVerificationData((prev) => ({ ...prev, loading: false }));
           const from = location.state?.from?.pathname || "/";
           navigate(from, { replace: true });
@@ -163,6 +130,7 @@ const Login = () => {
           }));
         }
       } else {
+        const errorData = await response.json();
         throw new Error(errorData.detail || "Invalid verification code");
       }
     }
@@ -243,7 +211,6 @@ const Login = () => {
         />
       )}
 
-      {/* Footer */}
       <Box
         sx={{
           position: "fixed",
