@@ -5,7 +5,6 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/api/auth";
 import AuthLayout from "../../components/auth/AuthLayout";
 import SignUpForm from "../../components/auth/SignUpForm";
-import EmailVerificationForm from "../../components/auth/EmailVerificationForm";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -14,11 +13,6 @@ const Register = () => {
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [registrationData, setRegistrationData] = useState(null);
-  const [verificationData, setVerificationData] = useState({
-    loading: false,
-    error: null,
-    resendCooldown: 0,
-  });
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -73,80 +67,8 @@ const Register = () => {
     }
   };
 
-  // Handle OTP verification
-  const handleVerificationSubmit = async ({ code }) => {
-    try {
-      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
-
-      // Verify the OTP code
-      const response = await authService.verifyRegistration(
-        registrationData.email,
-        code
-      );
-
-      console.log("Verification successful:", response);
-
-      // Redirect to login with success message
-      navigate("/login", {
-        state: {
-          message:
-            "Registration successful! Please login with your credentials.",
-          email: registrationData.email,
-        },
-      });
-    } catch (error) {
-      console.error("Verification error:", error);
-      setVerificationData((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
-    }
-  };
-
-  // Handle OTP resend
-  const handleResendCode = async () => {
-    try {
-      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
-
-      await authService.resendRegistrationOTP(registrationData.email);
-
-      console.log("OTP resent successfully");
-
-      // Start cooldown timer
-      setVerificationData((prev) => ({
-        ...prev,
-        loading: false,
-        resendCooldown: 60,
-      }));
-
-      // Countdown timer
-      const countdown = setInterval(() => {
-        setVerificationData((prev) => {
-          if (prev.resendCooldown <= 1) {
-            clearInterval(countdown);
-            return { ...prev, resendCooldown: 0 };
-          }
-          return { ...prev, resendCooldown: prev.resendCooldown - 1 };
-        });
-      }, 1000);
-    } catch (error) {
-      console.error("Resend OTP error:", error);
-      setVerificationData((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
-    }
-  };
-
   const handleBackToEmail = () => {
     setCurrentStep("signup");
-    setVerificationData({
-      loading: false,
-      error: null,
-      resendCooldown: 0,
-    });
     clearError();
   };
 
@@ -162,19 +84,6 @@ const Register = () => {
           onSubmit={handleRegistrationSubmit}
           loading={isLoading}
           error={error}
-        />
-      )}
-
-      {currentStep === "verification" && (
-        <EmailVerificationForm
-          email={registrationData?.email}
-          onVerify={handleVerificationSubmit}
-          onResendCode={handleResendCode}
-          onBackToEmail={handleBackToEmail}
-          loading={verificationData.loading}
-          error={verificationData.error}
-          resendCooldown={verificationData.resendCooldown}
-          isRegistration={true}
         />
       )}
 

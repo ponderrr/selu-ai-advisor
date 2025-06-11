@@ -2,27 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
-import {
-  AuthLayout,
-  SignInForm,
-  EmailVerificationForm,
-} from "../../components/auth";
+import { AuthLayout, SignInForm } from "../../components/auth";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  const intervalIdRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("signin");
   const [emailData, setEmailData] = useState({
     email: "",
     rememberDevice: false,
-  });
-  const [verificationData, setVerificationData] = useState({
-    loading: false,
-    error: null,
-    resendCooldown: 0,
   });
 
   useEffect(() => {
@@ -36,152 +26,21 @@ const Login = () => {
     clearError();
   }, [clearError]);
 
-  useEffect(() => {
-    intervalIdRef.current = setInterval(() => {
-      setVerificationData((prevData) => {
-        if (prevData.resendCooldown > 0) {
-          const newCooldown = prevData.resendCooldown - 1;
-          if (newCooldown === 0) {
-            if (intervalIdRef.current) {
-              clearInterval(intervalIdRef.current);
-              intervalIdRef.current = null;
-            }
-          }
-          return { ...prevData, resendCooldown: newCooldown };
-        } else {
-          if (intervalIdRef.current) {
-            clearInterval(intervalIdRef.current);
-            intervalIdRef.current = null;
-          }
-          return prevData;
-        }
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
-    };
-  }, []);
-
-  const handleEmailSubmit = async (formData) => {
+  const handleLoginSubmit = async (formData) => {
     try {
+      clearError();
       setEmailData(formData);
 
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/send-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-            rememberDevice: formData.rememberDevice,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        setCurrentStep("verification");
-        setVerificationData((prev) => ({
-          ...prev,
-          loading: false,
-          error: null,
-          resendCooldown: 120,
-        }));
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        const from = location.state?.from?.pathname || "/";
+        navigate(from, { replace: true });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to send verification code");
+        // Error is now handled by AuthContext and available via the error prop
       }
     } catch (err) {
-      console.error("Email submission error:", err);
+      console.error("Login error:", err);
     }
-  };
-
-  const handleVerificationSubmit = async (code) => {
-  try {
-    setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
-
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: emailData.email,
-            code,
-            rememberDevice: emailData.rememberDevice,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const result = await login(emailData.email, code);
-        if (result.success) {
-          setVerificationData((prev) => ({ ...prev, loading: false }));
-          const from = location.state?.from?.pathname || "/";
-          navigate(from, { replace: true });
-        } else {
-          setVerificationData((prev) => ({
-            ...prev,
-            loading: false,
-            error: fallback.error || "User already verified, but login failed.",
-          }));
-        }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Invalid verification code");
-      }
-    }
-  } catch (err) {
-    console.error("Verification error:", err);
-    setVerificationData((prev) => ({
-      ...prev,
-      loading: false,
-      error: err.message,
-    }));
-  }
-  };
-
-
-  const handleResendCode = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/resend-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailData.email }),
-        }
-      );
-
-      if (response.ok) {
-        setVerificationData((prev) => ({
-          ...prev,
-          resendCooldown: 120,
-          error: null,
-        }));
-      } else {
-        throw new Error("Failed to resend code");
-      }
-    } catch (err) {
-      console.error("Resend error:", err);
-      setVerificationData((prev) => ({
-        ...prev,
-        error: "Failed to resend code. Please try again.",
-      }));
-    }
-  };
-
-  const handleBackToEmail = () => {
-    setCurrentStep("signin");
-    setVerificationData({
-      loading: false,
-      error: null,
-      resendCooldown: 0,
-    });
-    clearError();
   };
 
   const handleSwitchToSignUp = () => {
@@ -193,21 +52,9 @@ const Login = () => {
       {currentStep === "signin" && (
         <SignInForm
           onSwitchToSignUp={handleSwitchToSignUp}
-          onEmailSubmit={handleEmailSubmit}
+          onLoginSubmit={handleLoginSubmit}
           loading={isLoading}
           error={error}
-        />
-      )}
-
-      {currentStep === "verification" && (
-        <EmailVerificationForm
-          email={emailData.email}
-          onVerify={handleVerificationSubmit}
-          onResendCode={handleResendCode}
-          onBackToEmail={handleBackToEmail}
-          loading={verificationData.loading}
-          error={verificationData.error}
-          resendCooldown={verificationData.resendCooldown}
         />
       )}
 

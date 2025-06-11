@@ -4,14 +4,6 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
-class SendOTPRequest(BaseModel):
-    email: EmailStr
-
-
-class SendOTPResponse(BaseModel):
-    msg: str
-
-
 class AcademicInfo(BaseModel):
     status: Optional[str] = None
     expectedGraduation: Optional[str] = None

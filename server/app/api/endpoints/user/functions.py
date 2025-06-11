@@ -1,21 +1,22 @@
 from fastapi import HTTPException, status, Depends
-from typing import Annotated
+from typing import Annotated, Optional
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
 
 # from auth import models, schemas
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 
 # import 
 from app.models import user as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate, Token, UserLogin
 from app.core.settings import SECRET_KEY, REFRESH_SECRET_KEY, ALGORITHM
-from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from app.core.dependencies import get_db, oauth2_scheme
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_password_hash(password: str) -> str:
     """Hash a password using bcrypt"""
@@ -81,77 +82,93 @@ def get_user_by_w_number(db: Session, w_number: str):
     return db.query(User).filter(User.w_number == w_number).first()
 
 # =====================> login/logout <============================
-def authenticate_user(db: Session, user: UserLogin):
-    member = get_user_by_email(db, user.email)
-    if not member:
-        return False
-    if not verify_password(user.password, member.password):
-        return False
-    return member
+def authenticate_user(db: Session, user: UserLogin) -> Optional[UserModel.User]:
+    db_user = get_user_by_email(db, user.email)
+    if not db_user:
+        return None
+    if not verify_password(user.password, db_user.password):
+        return None
+    return db_user
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = {
-        k: (v.value if hasattr(v, "value") else v)
-        for k, v in data.items()
-    }
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-
-async def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = {
-        k: (v.value if hasattr(v, "value") else v)
-        for k, v in data.items()
-    }
+async def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(days=7)
+        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
 
 async def refresh_access_token(db: Session, refresh_token: str):
     try:
-        payload = jwt.decode(refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("id")
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("id")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
-        # member = await User.get(user_id)
-        member = get_user_by_id(db, user_id)
-        if member is None:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token =  create_access_token(
-            data={"id": member.id, "email": member.email, "role": member.role},
-            expires_delta=access_token_expires
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
+        
+        user = db.query(UserModel.User).filter(UserModel.User.id == user_id).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+        
+        access_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"id": user.id, "email": user.email, "role": user.role.value},
+            expires_delta=access_expires,
         )
-        return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+        
+        refresh_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        refresh_token = await create_refresh_token(
+            data={"id": user.id, "email": user.email, "role": user.role.value},
+            expires_delta=refresh_expires,
+        )
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-    
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
 # get current users info 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]):
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> UserModel.User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication credentials",
+        detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        # print(f"Payload =====> {payload}")
-        current_email: str = payload.get("email")
-        if current_email is None:
+        user_id: int = payload.get("id")
+        if user_id is None:
             raise credentials_exception
-        user = get_user_by_email(db, current_email)
-        if user is None:
-            raise credentials_exception
-        return user
     except JWTError:
         raise credentials_exception
+    
+    user = db.query(UserModel.User).filter(UserModel.User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    return user
