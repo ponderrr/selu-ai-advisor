@@ -25,7 +25,7 @@ from app.api.endpoints.user import functions as user_functions
 from app.core.otp import set_otp, verify_otp
 from app.models.user import User as UserModel
 
-auth_module = APIRouter()
+auth_module = APIRouter(prefix="/auth")
 
 _otp_store: dict[str, dict] = {}
 _registration_store: dict[str, dict] = {}
