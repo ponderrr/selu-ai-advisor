@@ -100,8 +100,8 @@ const Login = () => {
   };
 
   const handleVerificationSubmit = async (code) => {
-  try {
-    setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      setVerificationData((prev) => ({ ...prev, loading: true, error: null }));
 
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"}/auth/verify-otp`,
@@ -133,17 +133,15 @@ const Login = () => {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Invalid verification code");
       }
+    } catch (err) {
+      console.error("Verification error:", err);
+      setVerificationData((prev) => ({
+        ...prev,
+        loading: false,
+        error: err.message,
+      }));
     }
-  } catch (err) {
-    console.error("Verification error:", err);
-    setVerificationData((prev) => ({
-      ...prev,
-      loading: false,
-      error: err.message,
-    }));
-  }
   };
-
 
   const handleResendCode = async () => {
     try {
