@@ -18,31 +18,8 @@ def assign_course(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    course = db.query(Course).get(payload.course_id)
-    if course is None:
-        raise HTTPException(404, detail="Course not found")
+    return functions.assign_course_to_student(db, current_user.id, payload)
 
-    exists = (
-        db.query(StudentCourse)
-        .filter(
-            StudentCourse.user_id == current_user.id,
-            StudentCourse.course_id == payload.course_id,
-        )
-        .first()
-    )
-    if exists:
-        raise HTTPException(409, detail="Course already assigned to this student")
-
-    record = StudentCourse(
-        user_id=current_user.id,
-        course_id=payload.course_id,
-        completed=payload.completed,
-        grade=payload.grade,
-    )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
-    return record
 
 @student_course_module.get("/", response_model=list[StudentCourseRead])
 def get_all_student_courses(db: Session = Depends(get_db)):
@@ -59,6 +36,25 @@ def get_by_course(course_id: int, db: Session = Depends(get_db)):
     return functions.get_by_course(db, course_id)
 
 
+@student_course_module.put("/{course_id}", response_model=StudentCourseRead)
+def update_student_course(
+    course_id: int,
+    payload: StudentCourseCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return functions.update_student_course(db, current_user.id, course_id, payload)
+
+
+@student_course_module.delete("/{course_id}")
+def delete_student_course(
+    course_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return functions.delete_student_course(db, current_user.id, course_id)
+
+
 @student_course_module.get("/progress/{user_id}")
 def get_student_progress(user_id: int, db: Session = Depends(get_db)):
     records = (
@@ -67,7 +63,12 @@ def get_student_progress(user_id: int, db: Session = Depends(get_db)):
         .all()
     )
     if not records:
-        raise HTTPException(404, detail="No completed courses found for this student")
+        return {
+            "user_id": user_id,
+            "completed_courses": [],
+            "GPA": 0.0,
+            "total_credits": 0.0
+        }
 
     grade_to_points = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
     total_points = 0.0
@@ -82,7 +83,13 @@ def get_student_progress(user_id: int, db: Session = Depends(get_db)):
             total_points += points * course.credits
             total_credits += course.credits
             completed_courses.append(
-                {"course": course.title, "grade": grade, "credits": course.credits}
+                {
+                    "course": course.title,
+                    "grade": grade,
+                    "credits": course.credits,
+                    "semester": r.semester,
+                    "year": r.year
+                }
             )
 
     gpa = round(total_points / total_credits, 2) if total_credits else 0.0
@@ -91,4 +98,5 @@ def get_student_progress(user_id: int, db: Session = Depends(get_db)):
         "user_id": user_id,
         "completed_courses": completed_courses,
         "GPA": gpa,
+        "total_credits": total_credits
     }

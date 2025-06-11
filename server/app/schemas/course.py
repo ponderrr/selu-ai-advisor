@@ -40,3 +40,13 @@ class CourseRead(_CourseBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+class CourseRecommendation(BaseModel):
+    course: CourseRead
+    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    reason: str
+
+    model_config = {
+        "orm_mode": True,
+        "use_enum_values": True
+    }

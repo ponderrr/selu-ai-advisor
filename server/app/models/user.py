@@ -35,6 +35,7 @@ class User(Base):
     # Relationships
     completed_courses     = relationship("StudentCourse", back_populates="student")
     chat_messages         = relationship("ChatMessage", back_populates="user")
+    sessions             = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
     user_profile          = relationship("UserProfile", back_populates="user",
                                           uselist=False, cascade="all, delete-orphan")

@@ -6,7 +6,10 @@ from app.core.dependencies import get_db
 from app.models.student_course import StudentCourse
 from app.models.course import Course as CourseModel
 from app.models.enums import CourseCategory, CourseLevel
-from app.schemas.course import CourseCreate, CourseUpdate, CourseRead
+from app.schemas.course import CourseCreate, CourseUpdate, CourseRead, CourseRecommendation
+from app.core.security import get_current_user
+from app.models.user import User
+from app.core.services.recommendation_service import RecommendationService
 
 course_module = APIRouter(prefix="/courses", tags=["courses"]) 
 
@@ -45,6 +48,18 @@ def search_courses(q: str, db: Session = Depends(get_db)):
         filters.append(CourseModel.credits == float(q))
 
     return db.query(CourseModel).filter(sa.or_(*filters)).all()
+
+@course_module.get("/recommendations", response_model=list[CourseRecommendation])
+def get_recommendations(
+    limit: int = Query(5, ge=1, le=10),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get personalized course recommendations based on the student's progress.
+    """
+    recommendation_service = RecommendationService(db)
+    return recommendation_service.get_course_recommendations(current_user.id, limit)
 
 @course_module.get("/{course_id}", response_model=CourseRead)
 def get_course(course_id: int, db: Session = Depends(get_db)):

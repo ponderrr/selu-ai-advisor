@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
 from app.models.user import UserRole, AcademicYear
+from app.schemas.degree_program import DegreeProgramBase
 
 class UserBase(BaseModel):
     w_number: str
@@ -35,6 +36,7 @@ class User(UserBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    degree_program: Optional[DegreeProgramBase] = None
 
     class Config:
         from_attributes = True
