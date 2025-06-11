@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 
 # import 
 from app.models import user as UserModel
-from app.schemas.user import User, UserCreate, UserUpdate, Token
+from app.schemas.user import User, UserCreate, UserUpdate, Token, UserLogin
 from app.core.settings import SECRET_KEY, REFRESH_SECRET_KEY, ALGORITHM
 from app.core.settings import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.dependencies import get_db, oauth2_scheme
@@ -81,9 +81,6 @@ def get_user_by_w_number(db: Session, w_number: str):
     return db.query(User).filter(User.w_number == w_number).first()
 
 # =====================> login/logout <============================
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
 def authenticate_user(db: Session, user: UserLogin):
     member = get_user_by_email(db, user.email)
     if not member:

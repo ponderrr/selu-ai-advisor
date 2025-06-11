@@ -32,7 +32,8 @@ export const useOnboardingStatus = () => {
       // This is a client-side check as backup
       try {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
-        const hasBasicInfo = user.academic?.major && user.academic?.department;
+        const hasBasicInfo =
+          user.academic?.degree_program && user.academic?.academic_year;
 
         setOnboardingStatus({
           isOnboardingComplete: hasBasicInfo,

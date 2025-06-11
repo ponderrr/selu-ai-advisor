@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -16,15 +15,6 @@ import {
   Checkbox,
   Alert,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
@@ -34,15 +24,8 @@ import {
   CloudUpload,
   CheckCircle,
   Schedule,
-  Bullseye,
-  AutoAwesome,
-  ListAlt,
-  Search,
-  Tune,
-  Shield,
   ArrowBack,
   ArrowForward,
-  ExpandMore,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -55,7 +38,7 @@ function CourseHistoryMethod() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [selectedMethod, setSelectedMethod] = useState("ai");
+  const [selectedMethod, setSelectedMethod] = useState("");
   const [noCourses, setNoCourses] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -70,7 +53,7 @@ function CourseHistoryMethod() {
     if (event.target.checked) {
       setSelectedMethod("");
     } else {
-      setSelectedMethod("ai");
+      setSelectedMethod("");
     }
   };
 
@@ -191,7 +174,13 @@ function CourseHistoryMethod() {
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
-            <Button variant="outlined" onClick={() => setSelectedMethod("")}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSelectedMethod("");
+                setNoCourses(false);
+              }}
+            >
               Change Selection
             </Button>
             <Button

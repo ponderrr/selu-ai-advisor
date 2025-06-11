@@ -1,14 +1,8 @@
+import { validateWNumber, validateSeluEmail } from "../../utils/authValidation";
+import { validateRegistrationForm } from "../validation/authValidation";
+
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-
-// Utility functions for validation
-const validateWNumber = (wNumber) => {
-  return /^W\d{7}$/.test(wNumber);
-};
-
-const validateSeluEmail = (email) => {
-  return email.endsWith("@selu.edu");
-};
 
 export const authService = {
   async login(email, password) {
@@ -51,16 +45,11 @@ export const authService = {
 
   async register(userData) {
     try {
-      // Validate email domain
-      if (!validateSeluEmail(userData.email)) {
-        throw new Error("Please use your SELU email address (@selu.edu)");
-      }
-
-      // Validate W-number if provided (it's optional)
-      if (userData.wNumber && !validateWNumber(userData.wNumber)) {
-        throw new Error(
-          "W-number must be in format W1234567 (W followed by 7 digits)"
-        );
+      const errors = validateRegistrationForm(userData);
+      if (Object.keys(errors).length > 0) {
+        // Take the first error message and throw it
+        const firstErrorKey = Object.keys(errors)[0];
+        throw new Error(errors[firstErrorKey]);
       }
 
       // Use proper registration endpoint with OTP
