@@ -45,7 +45,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { onboardingService } from "../../services/api/onboarding";
-import { OnboardingStepper } from "../../components/onboarding";
+import { OnboardingStepper } from ".";
 
 function Preferences() {
   const theme = useTheme();

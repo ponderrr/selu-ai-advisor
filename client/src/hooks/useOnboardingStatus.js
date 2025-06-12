@@ -3,7 +3,7 @@ import { onboardingService } from "../services/api/onboarding";
 
 export const useOnboardingStatus = () => {
   const [onboardingStatus, setOnboardingStatus] = useState({
-    isOnboardingComplete: true,
+    isOnboardingComplete: false,
     missingFields: [],
     loading: true,
     error: null,

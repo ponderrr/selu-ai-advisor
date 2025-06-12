@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -54,6 +54,7 @@ function TranscriptUpload() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const { user } = useAuth();
+  const timeoutRef = useRef(null);
 
   const [uploadState, setUploadState] = useState("idle"); // idle, uploading, processing, review, saving
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -115,7 +116,7 @@ function TranscriptUpload() {
       setUploadState("processing");
 
       // Simulate AI processing time
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setExtractedCourses(result.courses || []);
         setUploadState("review");
       }, 2000);
@@ -125,6 +126,14 @@ function TranscriptUpload() {
       setUploadProgress(0);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCourseEdit = (courseIndex, field, value) => {
     setExtractedCourses((prev) =>
@@ -138,6 +147,7 @@ function TranscriptUpload() {
     setExtractedCourses((prev) =>
       prev.filter((_, index) => index !== courseIndex)
     );
+    setEditingCourse(null);
   };
 
   const handleSaveAndContinue = async () => {

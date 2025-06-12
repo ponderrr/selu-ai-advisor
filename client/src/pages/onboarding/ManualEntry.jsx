@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -48,6 +48,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { onboardingService } from "../../services/api/onboarding";
 import { OnboardingStepper } from "../../components/onboarding";
+import debounce from "lodash/debounce";
 
 function ManualEntry() {
   const theme = useTheme();
@@ -67,26 +68,28 @@ function ManualEntry() {
     credits: "",
   });
 
-  // Load courses on component mount
-  useEffect(() => {
-    loadCourses();
-  }, []);
+  const debouncedLoadCourses = useCallback(
+    debounce(async (search, filterParams) => {
+      try {
+        setLoading(true);
+        const coursesData = await onboardingService.searchCourses(
+          search,
+          filterParams
+        );
+        setCourses(coursesData);
+        setError(null);
+      } catch (error) {
+        setError("Failed to load courses. Please try again.");
+        console.error("Error loading courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    }, 300),
+    []
+  );
 
   const loadCourses = async (search = "", filterParams = {}) => {
-    try {
-      setLoading(true);
-      const coursesData = await onboardingService.searchCourses(
-        search,
-        filterParams
-      );
-      setCourses(coursesData);
-      setError(null);
-    } catch (error) {
-      setError("Failed to load courses. Please try again.");
-      console.error("Error loading courses:", error);
-    } finally {
-      setLoading(false);
-    }
+    debouncedLoadCourses(search, filterParams);
   };
 
   // Filter and search courses
@@ -111,10 +114,10 @@ function ManualEntry() {
     });
   }, [courses, searchQuery, filters]);
 
-  const handleSearch = async (newQuery) => {
+  const handleSearch = (newQuery) => {
     setSearchQuery(newQuery);
     if (newQuery.length >= 2) {
-      await loadCourses(newQuery, filters);
+      loadCourses(newQuery, filters);
     }
   };
 
@@ -519,13 +522,21 @@ function ManualEntry() {
                       size="small"
                       type="number"
                       value={course.year}
-                      onChange={(e) =>
-                        updateCourse(
-                          course.id,
-                          "year",
-                          parseInt(e.target.value)
-                        )
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          updateCourse(course.id, "year", "");
+                        } else {
+                          const year = parseInt(value);
+                          if (!isNaN(year)) {
+                            const clampedYear = Math.min(
+                              Math.max(year, 2000),
+                              2030
+                            );
+                            updateCourse(course.id, "year", clampedYear);
+                          }
+                        }
+                      }}
                       sx={{ width: 80 }}
                       inputProps={{ min: 2000, max: 2030 }}
                     />
