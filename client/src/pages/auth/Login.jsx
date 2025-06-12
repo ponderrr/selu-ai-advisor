@@ -36,7 +36,7 @@ const Login = () => {
         const from = location.state?.from?.pathname || "/";
         navigate(from, { replace: true });
       } else {
-        // Error is now handled by AuthContext and available via the error prop
+        // Error is now handled by AuthContext 
       }
     } catch (err) {
       console.error("Login error:", err);

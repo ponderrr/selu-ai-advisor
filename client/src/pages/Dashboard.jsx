@@ -46,10 +46,11 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { dashboardService } from "../services/api/dashboard";
+import { useOnboardingStatus } from "../hooks/useOnboardingStatus";
 
 const drawerWidth = 256;
 
-// Mock data fallback (move this outside component to prevent recreation)
+// Mock data fallback 
 const mockData = {
   degreeProgress: {
     totalCredits: 120,
@@ -100,7 +101,7 @@ const mockData = {
   ],
 };
 
-// Custom Circular Progress Component (renamed to avoid conflict)
+// Custom Circular Progress Component 
 const CustomCircularProgress = ({ percentage, size = 128 }) => {
   const radius = (size - 24) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -229,6 +230,128 @@ function MainDashboard() {
   const [progressLoading, setProgressLoading] = useState(true);
   const [aiHealth, setAiHealth] = useState({ status: "checking" });
 
+  // Onboarding status check
+  const {
+    isOnboardingComplete,
+    missingFields,
+    loading: onboardingLoading,
+  } = useOnboardingStatus();
+
+  // Early return for incomplete onboarding
+  if (!onboardingLoading && !isOnboardingComplete) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#f5f7fa",
+          p: 3,
+        }}
+      >
+        <Paper
+          sx={{
+            p: 4,
+            textAlign: "center",
+            maxWidth: 600,
+            width: "100%",
+            borderRadius: 2,
+            boxShadow: 3,
+          }}
+        >
+          <Box sx={{ mb: 3 }}>
+            <Avatar
+              sx={{
+                bgcolor: "#026937",
+                width: 64,
+                height: 64,
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <School sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              Welcome to SELU CS Advisor!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Let's get your academic profile set up so we can provide
+              personalized guidance.
+            </Typography>
+          </Box>
+
+          <Paper
+            sx={{
+              p: 2,
+              bgcolor: "#e3f2fd",
+              border: 1,
+              borderColor: "#2196f3",
+              mb: 3,
+            }}
+          >
+            <Typography variant="body2" color="primary.main">
+              <strong>Missing:</strong> {missingFields.join(", ")}
+            </Typography>
+          </Paper>
+
+          <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate("/onboarding/academic-profile")}
+              sx={{
+                bgcolor: "#026937",
+                "&:hover": { bgcolor: "#024a29" },
+                px: 4,
+              }}
+            >
+              Complete Setup
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate("/chat")}
+              sx={{ px: 4 }}
+            >
+              Skip for Now
+            </Button>
+          </Box>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 2, display: "block" }}
+          >
+            This setup takes less than 3 minutes and helps us provide better
+            guidance
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Loading state for onboarding check
+  if (onboardingLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ textAlign: "center" }}>
+          <CircularProgress size={60} sx={{ mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            Loading your account...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   // User data (fixed the scoping issue)
   const userData = {
     name:
@@ -244,7 +367,7 @@ function MainDashboard() {
     loadInitialData();
     checkAiHealth();
 
-    // Added: Cleanup function to set isMountedRef to false on unmount
+    // Cleanup function to set isMountedRef to false on unmount
     return () => {
       isMountedRef.current = false;
     };

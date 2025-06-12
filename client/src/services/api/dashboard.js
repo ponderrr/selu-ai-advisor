@@ -196,7 +196,7 @@ export const dashboardService = {
     }
   },
 
-  // Send chat message to AI
+  // Send message to AI
   async sendChatMessage(message, context = null) {
     try {
       const response = await fetch(`${API_BASE_URL}/chat/`, {

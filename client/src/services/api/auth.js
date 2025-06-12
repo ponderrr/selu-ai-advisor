@@ -4,8 +4,6 @@ import {
 } from "../validation/authValidation";
 import { validateRegistrationForm } from "../validation/authValidation";
 
-// Removed API_BASE_URL as proxy handles routing.
-
 export const authService = {
   async login(email, password) {
     try {
@@ -49,7 +47,6 @@ export const authService = {
     try {
       const errors = validateRegistrationForm(userData);
       if (Object.keys(errors).length > 0) {
-        // Take the first error message and throw it
         const firstErrorKey = Object.keys(errors)[0];
         throw new Error(errors[firstErrorKey]);
       }

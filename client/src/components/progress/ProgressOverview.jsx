@@ -213,7 +213,7 @@ function ProgressOverview({ data }) {
     );
   }
 
-  // Extract data with fallbacks
+  // Data with fallbacks
   const overview = data.overview || {};
   const categories = data.categories || [];
   const student = data.student || {};

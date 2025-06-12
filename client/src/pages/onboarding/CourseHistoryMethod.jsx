@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -17,6 +18,15 @@ import {
   CircularProgress,
   useTheme,
   useMediaQuery,
+  Table,
+  TableContainer,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   School,
@@ -26,11 +36,21 @@ import {
   Schedule,
   ArrowBack,
   ArrowForward,
+  Search,
+  Bullseye,
+  Speed,
+  Shield,
+  AccessTime,
+  AutoFixHigh,
+  ListAlt,
+  ExpandMore,
+  Help,
+  Phone,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { onboardingService } from "../../services/api/onboarding";
-import OnboardingStepper from "../../components/onboarding/WelcomeStep";
+import OnboardingStepper from "../../components/onboarding/OnboardingStepper";
 
 function CourseHistoryMethod() {
   const theme = useTheme();
@@ -38,7 +58,7 @@ function CourseHistoryMethod() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [selectedMethod, setSelectedMethod] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState("ai"); // Default to AI
   const [noCourses, setNoCourses] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -53,7 +73,7 @@ function CourseHistoryMethod() {
     if (event.target.checked) {
       setSelectedMethod("");
     } else {
-      setSelectedMethod("");
+      setSelectedMethod("ai");
     }
   };
 
@@ -61,6 +81,10 @@ function CourseHistoryMethod() {
     if (noCourses) {
       try {
         setLoading(true);
+        await onboardingService.saveCourseHistoryMethod(
+          "skip",
+          "no_courses_yet"
+        );
         await onboardingService.completeOnboarding();
         navigate("/");
       } catch (error) {
@@ -70,9 +94,27 @@ function CourseHistoryMethod() {
         setLoading(false);
       }
     } else if (selectedMethod === "ai") {
-      navigate("/onboarding/transcript-upload");
+      try {
+        setLoading(true);
+        await onboardingService.saveCourseHistoryMethod("ai_upload");
+        navigate("/onboarding/transcript-upload");
+      } catch (error) {
+        setError("Failed to save selection. Please try again.");
+        console.error("Error saving method:", error);
+      } finally {
+        setLoading(false);
+      }
     } else if (selectedMethod === "manual") {
-      navigate("/onboarding/manual-entry");
+      try {
+        setLoading(true);
+        await onboardingService.saveCourseHistoryMethod("manual");
+        navigate("/onboarding/manual-entry");
+      } catch (error) {
+        setError("Failed to save selection. Please try again.");
+        console.error("Error saving method:", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -132,7 +174,6 @@ function CourseHistoryMethod() {
         </Box>
       </Box>
 
-      {/* BODY */}
       <Box sx={{ maxWidth: 1200, mx: "auto", px: 3, py: 4 }}>
         <OnboardingStepper activeStep={1} />
 
@@ -155,6 +196,37 @@ function CourseHistoryMethod() {
           </Button>
         </Box>
 
+        {/* Introduction Card */}
+        <Paper sx={{ p: 3, mb: 4, maxWidth: 800, mx: "auto" }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            {!isMobile && (
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  bgcolor: "primary.light",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mr: 3,
+                }}
+              >
+                <Schedule sx={{ color: "primary.main", fontSize: 32 }} />
+              </Box>
+            )}
+            <Box>
+              <Typography variant="h5" fontWeight="bold" gutterBottom>
+                To provide accurate academic guidance, we need to know what
+                courses you've already completed.
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Choose the method that works best for you:
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+
         {/* Error Message */}
         {error && (
           <Alert severity="error" sx={{ mb: 3, maxWidth: 800, mx: "auto" }}>
@@ -162,42 +234,300 @@ function CourseHistoryMethod() {
           </Alert>
         )}
 
-        {/* Buttons */}
-        <Paper sx={{ p: 3, mb: 4, maxWidth: 800, mx: "auto" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <CheckCircle sx={{ color: "primary.main", mr: 1 }} />
-            <Typography variant="body2" color="text.secondary">
-              Method selected:{" "}
-              <Typography component="span" fontWeight="medium">
-                {getMethodDisplay()}
-              </Typography>
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelectedMethod("");
-                setNoCourses(false);
+        {/* Method Selection Cards */}
+        <Grid container spacing={3} sx={{ maxWidth: 1200, mx: "auto", mb: 4 }}>
+          {/* AI Upload Card */}
+          <Grid item xs={12} md={6}>
+            <Card
+              sx={{
+                height: "100%",
+                border: 2,
+                borderColor:
+                  selectedMethod === "ai" ? "primary.main" : "transparent",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  transform: "translateY(-2px)",
+                },
               }}
+              onClick={() => handleMethodSelect("ai")}
             >
-              Change Selection
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleContinue}
-              disabled={(!selectedMethod && !noCourses) || loading}
-              endIcon={
-                loading ? <CircularProgress size={16} /> : <ArrowForward />
-              }
+              <CardContent sx={{ p: 4 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    mb: 3,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      bgcolor: "primary.light",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <SmartToy sx={{ color: "primary.main", fontSize: 32 }} />
+                  </Box>
+                  <Chip
+                    label="RECOMMENDED"
+                    size="small"
+                    sx={{
+                      bgcolor: "secondary.main",
+                      color: "primary.main",
+                      fontWeight: "bold",
+                    }}
+                  />
+                </Box>
+
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  Upload Transcript Image
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Let AI extract your course information automatically
+                </Typography>
+
+                <List dense sx={{ my: 2 }}>
+                  {[
+                    "Upload a photo or scan of your transcript",
+                    "AI automatically identifies completed courses",
+                    "Matches courses to SELU requirements",
+                    "Review and confirm before saving",
+                    "Fastest setup - takes about 2 minutes",
+                  ].map((text, index) => (
+                    <ListItem key={index} sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <CheckCircle
+                          sx={{ color: "primary.main", fontSize: 20 }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={text}
+                        primaryTypographyProps={{ variant: "body2" }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
+                  <Chip label="Powered by AI" size="small" variant="outlined" />
+                  <Chip
+                    label="Secure & Private"
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label="99% accuracy rate"
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                >
+                  <AccessTime sx={{ color: "primary.main", fontSize: 20 }} />
+                  <Typography variant="body2">Quick and easy</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Manual Entry Card */}
+          <Grid item xs={12} md={6}>
+            <Card
+              sx={{
+                height: "100%",
+                border: 2,
+                borderColor:
+                  selectedMethod === "manual" ? "primary.main" : "transparent",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  transform: "translateY(-2px)",
+                },
+              }}
+              onClick={() => handleMethodSelect("manual")}
             >
-              {getContinueButtonText()}
-            </Button>
-          </Box>
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      bgcolor: "grey.100",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ListAlt sx={{ color: "grey.600", fontSize: 32 }} />
+                  </Box>
+                </Box>
+
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  Manual Course Selection
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Search and select courses from the SELU catalog
+                </Typography>
+
+                <List dense sx={{ my: 2 }}>
+                  {[
+                    "Search through all SELU courses",
+                    "Select exactly what you've taken",
+                    "Add grades and semesters",
+                    "Complete control over your data",
+                    "No file upload required",
+                  ].map((text, index) => (
+                    <ListItem key={index} sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <CheckCircle
+                          sx={{ color: "primary.main", fontSize: 20 }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={text}
+                        primaryTypographyProps={{ variant: "body2" }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
+                  <Chip
+                    label="Complete control"
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label="Comprehensive search"
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label="No uploads needed"
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                >
+                  <Search sx={{ color: "grey.600", fontSize: 20 }} />
+                  <Typography variant="body2">Manual but precise</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Comparison Table */}
+        <Paper sx={{ p: 3, mb: 4, maxWidth: 800, mx: "auto" }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Not sure which to choose?
+          </Typography>
+
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Feature</TableCell>
+                  <TableCell>AI Upload</TableCell>
+                  <TableCell>Manual Entry</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Time required</TableCell>
+                  <TableCell>~2 minutes</TableCell>
+                  <TableCell>~10-15 minutes</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Accuracy</TableCell>
+                  <TableCell>Very high</TableCell>
+                  <TableCell fontWeight="medium">Perfect</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Privacy</TableCell>
+                  <TableCell>Transcript analyzed</TableCell>
+                  <TableCell fontWeight="medium">No uploads</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Effort</TableCell>
+                  <TableCell fontWeight="medium">Minimal</TableCell>
+                  <TableCell>Moderate</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        {/* FAQ Section */}
+        <Paper
+          sx={{ p: 3, mb: 4, maxWidth: 800, mx: "auto", bgcolor: "grey.50" }}
+        >
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="subtitle1" fontWeight="medium">
+                Need help deciding?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Is my transcript data secure?
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                Yes, your transcript is processed locally and deleted after
+                analysis. We only store the extracted course information that
+                you approve.
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                gutterBottom
+                sx={{ mt: 2 }}
+              >
+                What if AI misses some courses?
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                You can review and edit everything before confirming. Any
+                missing courses can be added manually after the AI processing is
+                complete.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+        </Paper>
+
+        {/* No Courses Option */}
+        <Paper sx={{ p: 3, mb: 4, maxWidth: 800, mx: "auto" }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={noCourses}
+                onChange={handleNoCoursesChange}
+                color="primary"
+              />
+            }
+            label="I don't have any completed courses yet"
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+            Skip to degree planning if you're a new freshman
+          </Typography>
         </Paper>
       </Box>
 
-      {/* Bottom Bar */}
+      {/* Bottom Action Bar */}
       <Paper
         sx={{
           position: "fixed",
@@ -220,20 +550,23 @@ function CourseHistoryMethod() {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
+            <CheckCircle sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="body2" color="text.secondary">
-              Selected Method:&nbsp;
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {getMethodDisplay()}
+              Method selected:{" "}
+              <Typography component="span" fontWeight="medium">
+                {getMethodDisplay()}
+              </Typography>
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Button
               variant="outlined"
-              onClick={() => navigate("/onboarding/academic-profile")}
-              startIcon={<ArrowBack />}
+              onClick={() => {
+                setSelectedMethod("ai");
+                setNoCourses(false);
+              }}
             >
-              Back
+              Change Selection
             </Button>
             <Button
               variant="contained"

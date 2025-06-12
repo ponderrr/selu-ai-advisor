@@ -11,7 +11,6 @@ import { NavigateNext } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { settingsService } from "../services/api/settings";
 
-// Import setting components
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import ProfileInformation from "../components/settings/ProfileInformation";
 import SecurityAuthentication from "../components/settings/SecurityAuthentication";

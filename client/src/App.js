@@ -12,13 +12,20 @@ import theme from "./styles/theme";
 import Layout from "./components/common/Layout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
-// Pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import MainDashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import Schedule from "./pages/Schedule";
+
+import {
+  AcademicProfile,
+  CourseHistoryMethod,
+  TranscriptUpload,
+  ManualEntry,
+  Preferences,
+} from "./pages/onboarding";
 
 function App() {
   return (
@@ -30,6 +37,48 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* ONBOARDING ROUTES */}
+            <Route
+              path="/onboarding/academic-profile"
+              element={
+                <ProtectedRoute>
+                  <AcademicProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding/course-history"
+              element={
+                <ProtectedRoute>
+                  <CourseHistoryMethod />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding/transcript-upload"
+              element={
+                <ProtectedRoute>
+                  <TranscriptUpload />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding/manual-entry"
+              element={
+                <ProtectedRoute>
+                  <ManualEntry />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding/preferences"
+              element={
+                <ProtectedRoute>
+                  <Preferences />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected Routes */}
             <Route

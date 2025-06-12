@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography, Paper, Chip, Divider } from "@mui/material";
 import PropTypes from "prop-types";
 
-// Fallback mock data
+// Fallback mock
 const getMockSemesterData = () => [
   {
     semester: "Fall 2022",

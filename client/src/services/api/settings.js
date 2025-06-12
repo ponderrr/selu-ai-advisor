@@ -19,7 +19,7 @@ const getMultipartHeaders = () => {
   }
   return {
     Authorization: `Bearer ${token}`,
-    // Don't set Content-Type for multipart, let browser set it
+    // Don't set Content-Type for multipart
   };
 };
 
@@ -34,8 +34,6 @@ const handleApiError = (error, functionName) => {
 };
 
 export const settingsService = {
-  // ===== USER PROFILE MANAGEMENT =====
-
   async getUserProfile() {
     try {
       const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
@@ -109,8 +107,6 @@ export const settingsService = {
     }
   },
 
-  // ===== ACADEMIC INFORMATION =====
-
   async getAcademicInfo() {
     try {
       const response = await fetch(`${API_BASE_URL}/users/me/academic`, {
@@ -182,8 +178,6 @@ export const settingsService = {
       handleApiError(error, "getAvailableConcentrations");
     }
   },
-
-  // ===== SECURITY & AUTHENTICATION =====
 
   async getActiveSessions() {
     try {
@@ -290,8 +284,6 @@ export const settingsService = {
     }
   },
 
-  // ===== PRIVACY & DATA CONTROLS =====
-
   async getPrivacySettings() {
     try {
       const response = await fetch(
@@ -390,8 +382,6 @@ export const settingsService = {
     }
   },
 
-  // ===== AI PREFERENCES =====
-
   async getAIPreferences() {
     try {
       const response = await fetch(`${API_BASE_URL}/users/me/ai-preferences`, {
@@ -446,8 +436,6 @@ export const settingsService = {
       handleApiError(error, "resetAILearning");
     }
   },
-
-  // ===== NOTIFICATION SETTINGS =====
 
   async getNotificationSettings() {
     try {

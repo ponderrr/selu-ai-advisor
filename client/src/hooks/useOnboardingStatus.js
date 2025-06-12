@@ -3,7 +3,7 @@ import { onboardingService } from "../services/api/onboarding";
 
 export const useOnboardingStatus = () => {
   const [onboardingStatus, setOnboardingStatus] = useState({
-    isOnboardingComplete: true, // Start as true to prevent flashing
+    isOnboardingComplete: true,
     missingFields: [],
     loading: true,
     error: null,
@@ -29,7 +29,6 @@ export const useOnboardingStatus = () => {
       console.error("Failed to check onboarding status:", error);
 
       // Fallback: check if user has basic academic info
-      // This is a client-side check as backup
       try {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         const hasBasicInfo =

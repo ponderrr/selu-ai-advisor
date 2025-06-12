@@ -36,6 +36,7 @@ function Profile() {
   const [error, setError] = useState(null);
   const [downloadingReport, setDownloadingReport] = useState(false);
 
+  // Mock data
   const getMockProgressData = (basicData = null) => ({
     student: {
       name:

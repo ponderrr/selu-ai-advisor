@@ -23,7 +23,6 @@ const Register = () => {
 
   const clearError = () => setError(null);
 
-  // ✅ CORRECTED: Use user-provided W-number, don't generate
   const handleRegistrationSubmit = async (formData) => {
     try {
       setLoading(true);
@@ -34,7 +33,7 @@ const Register = () => {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        wNumber: formData.studentId?.trim().toUpperCase() || null, // ✅ Use user input or null
+        wNumber: formData.studentId?.trim().toUpperCase() || null,
         academic: {
           status: formData.status,
           expectedGraduation: formData.expectedGraduation,
