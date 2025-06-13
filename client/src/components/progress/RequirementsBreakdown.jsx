@@ -79,7 +79,7 @@ const getCategoryColor = (category) => {
   }
 };
 
-// Fallback mock data (only used if no real data provided)
+// Fallback mock data
 const getMockRequirementsData = () => ({
   "Core CS Requirements": {
     completed: 24,

@@ -7,6 +7,7 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
+  // Show loading while checking authentication
   if (isLoading) {
     return (
       <Box
@@ -27,11 +28,12 @@ function ProtectedRoute({ children }) {
     );
   }
 
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    // Redirect to login with return URL
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // If authenticated, render the protected content
   return children;
 }
 

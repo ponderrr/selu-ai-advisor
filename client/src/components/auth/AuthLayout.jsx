@@ -190,7 +190,7 @@ const AuthLayout = ({ children, showTestimonial = true }) => {
         </Box>
       </Box>
 
-      {/* Right Side - Authentication Forms */}
+      {/* Right Side - Auth Forms */}
       <Box
         sx={{
           width: { xs: "100%", lg: "60%" },

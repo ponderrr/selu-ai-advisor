@@ -1,5 +1,3 @@
-// client/src/pages/onboarding/AcademicProfile.jsx
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -127,7 +125,6 @@ function AcademicProfile() {
       setFormData((prev) => ({ ...prev, concentration: "" }));
     } catch (error) {
       console.error("Error loading concentrations:", error);
-      // Concentrations are optional, so don't show error
     } finally {
       setLoading((prev) => ({ ...prev, concentrations: false }));
     }

@@ -43,7 +43,7 @@ const ChecklistItem = ({ title, description, status, details }) => {
   );
 };
 
-// Fallback mock data
+// Fallback mock
 const getMockGraduationData = () => ({
   institutional: [
     {

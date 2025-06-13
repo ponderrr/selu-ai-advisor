@@ -30,7 +30,6 @@ const EmailVerificationForm = ({
 
   const handleCodeChange = (index, value) => {
     if (value.length > 1) {
-      // Handle paste
       const pastedCode = value.slice(0, 6).split("");
       const newCode = [...code];
 

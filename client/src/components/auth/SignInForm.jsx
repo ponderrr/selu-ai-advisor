@@ -65,7 +65,7 @@ const SignInForm = ({
   };
 
   const handleSSO = (provider) => {
-    // SSO implementation would go here
+    // SSO implementation here
     console.log(`SSO login with ${provider}`);
   };
 
